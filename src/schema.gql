@@ -36,6 +36,7 @@ type LoginUserObject {
 }
 
 type Query {
+  getMe: String!
   getHelloUser: String!
 }
 
@@ -43,6 +44,7 @@ type Mutation {
   registerUser(input: RegisterUserInput!): RegisterUserObject!
   activationUser(input: ActivationUserInput!): User!
   loginUser(input: LoginUserInput!): LoginUserObject!
+  logout: String!
 }
 
 input RegisterUserInput {

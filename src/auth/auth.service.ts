@@ -203,4 +203,88 @@ export class AuthService {
     }
   }
   //Login End
+
+  // AccecssTokern verify
+  async refreshAccessToken(refreshToken: string) {
+    try {
+      const payload = await this.jwtService.verify(refreshToken, {
+        secret: process.env.JWT_REFRESH_SECRET,
+      });
+      console.log('access token için girdi');
+
+      const user = await this.userModel
+        .findById(payload.sub)
+        .select('email _id');
+
+      if (!user) {
+        this.handleError('Invalid refresh token', HttpStatus.UNAUTHORIZED);
+      }
+      const access_token = await this.jwtService.signAsync({
+        email: user.email,
+        sub: user._id,
+      });
+      return {
+        user: {
+          _id: user._id,
+          email: user.email,
+        },
+        access_token,
+      };
+    } catch (error) {
+      this.handleError(
+        'Failed to verift accesstoken',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
+    }
+  }
+  async verifyAcccessToken(jwt: string) {
+    if (!jwt) {
+      this.handleError('Invalid credentials!', HttpStatus.UNAUTHORIZED);
+    }
+    try {
+      const { email, sub, exp } = await this.jwtService.verifyAsync(jwt);
+
+      return {
+        user: {
+          _id: sub,
+          email: email,
+        },
+        exp,
+      };
+    } catch (error) {
+      this.handleError(
+        'Failed to verift accesstoken',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
+    }
+  }
+
+  // AccecssTokern verify  End
+
+  //Get Me
+  private async getUserId(_id: string): Promise<User> {
+    return await this.userModel.findOne({
+      _id,
+      deletedAt: { $exists: false },
+    });
+  }
+  async getMe(_id: string) {
+    try {
+      const user = await this.getUserId(_id);
+      if (!user) {
+        this.handleError('User Not Found', HttpStatus.NOT_FOUND);
+      }
+
+      return user;
+    } catch (error) {
+      this.handleError(
+        'Failed to Get Me',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
+    }
+  }
+  //Get Me End
 }

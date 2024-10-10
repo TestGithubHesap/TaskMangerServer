@@ -1,5 +1,5 @@
-import { Args, Context, Mutation, Resolver } from '@nestjs/graphql';
-import { UseInterceptors } from '@nestjs/common';
+import { Args, Context, Mutation, Query, Resolver } from '@nestjs/graphql';
+import { UseGuards, UseInterceptors } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RegisterUserInput } from 'src/auth/dto/RegisterUserInput';
 import { RegisterUserObject } from 'src/types/object-types/RegisterUserObject';
@@ -8,6 +8,8 @@ import { ActivationUserInput } from 'src/auth/dto/ActivationUserInput';
 import { GraphQLErrorInterceptor } from 'src/common/interceptors/graphql-error.interceptor';
 import { LoginUserObject } from 'src/types/object-types/LoginUserObject';
 import { LoginUserInput } from './dto/LoginUserInput';
+import { AuthGuard } from './guards/auth.guard';
+import { Response } from 'express';
 
 @Resolver()
 @UseInterceptors(GraphQLErrorInterceptor)
@@ -36,5 +38,36 @@ export class AuthResolver {
       res.cookie('access_token', data.access_token);
     }
     return data;
+  }
+
+  @Query(() => String)
+  @UseGuards(AuthGuard)
+  async getMe(@Context() context) {
+    const { req, res } = context;
+    console.log(req.user);
+    return 'aaa';
+  }
+
+  @Mutation(() => String)
+  @UseGuards(AuthGuard)
+  async logout(@Context() context: { res: Response }) {
+    const { res } = context;
+    try {
+      res.clearCookie('refresh_token', {
+        path: '/', 
+        httpOnly: true, 
+        secure: true, 
+        sameSite: 'strict', 
+      });
+      res.clearCookie('access_token', {
+        path: '/', 
+        httpOnly: true, 
+        secure: true, 
+        sameSite: 'strict', 
+      });
+      return 'successfully logged out ';
+    } catch (error) {
+      throw new Error(`Logout failed: ${error.message}`);
+    }
   }
 }
