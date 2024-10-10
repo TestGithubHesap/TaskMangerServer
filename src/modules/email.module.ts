@@ -21,7 +21,7 @@ import { EmailService } from 'src/services/email.service';
           from: 'Task',
         },
         template: {
-          dir: join(__dirname, '../email-templates'),
+          dir: `./src/email-templates`,
           adapter: new EjsAdapter(),
           options: {
             strict: false,

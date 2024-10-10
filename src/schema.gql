@@ -2,6 +2,52 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+type User {
+  _id: ID!
+  firstName: String!
+  lastName: String!
+  userName: String!
+  email: String!
+  profilePhoto: String
+  roles: [UserRole!]!
+  isDeleted: Boolean!
+  deletedAt: String
+  createdAt: String!
+  updatedAt: String!
+  status: String!
+}
+
+"""User roles"""
+enum UserRole {
+  ADMIN
+  WORKER
+  EXECUTIVE
+  USER
+}
+
+type RegisterUserObject {
+  activationToken: String!
+}
+
 type Query {
   getHelloUser: String!
+}
+
+type Mutation {
+  registerUser(input: RegisterUserInput!): RegisterUserObject!
+  activateUser(input: ActivationUserInput!): User!
+}
+
+input RegisterUserInput {
+  firstName: String!
+  lastName: String!
+  email: String!
+  userName: String!
+  password: String!
+  roles: [UserRole!]! = [USER]
+}
+
+input ActivationUserInput {
+  activationToken: String!
+  activationCode: String!
 }
