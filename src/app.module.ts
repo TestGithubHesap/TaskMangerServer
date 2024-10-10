@@ -2,9 +2,57 @@ import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
+import { UserModule } from './user/user.module';
+import { parseCookies } from './utils';
+import { GraphQLModule } from '@nestjs/graphql';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ApolloDriver } from '@nestjs/apollo';
+import { join } from 'path';
+import { PubSubModule } from './modules/pubSub.module';
+import { MongoDBModule } from './modules/mongodb.module';
 
 @Module({
-  imports: [AuthModule],
+  imports: [
+    AuthModule,
+    UserModule,
+    PubSubModule,
+    MongoDBModule.forRoot('TASK'),
+    GraphQLModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+
+      driver: ApolloDriver,
+      useFactory: async (configService: ConfigService) => ({
+        playground: Boolean(configService.get('GRAPHQL_PLAYGROUND')),
+        autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
+        uploads: false,
+
+        context: ({ req, res, connection }) => {
+          if (connection) {
+            return { req: connection.context, res };
+          }
+          return { req, res };
+        },
+        subscriptions: {
+          'subscriptions-transport-ws': {
+            onConnect: (webSocket) => {
+              const cookieString = webSocket.upgradeReq.headers.cookie || '';
+              const cookies = parseCookies(cookieString);
+
+              if (Object.keys(cookies).length > 0) {
+                return {
+                  req: {
+                    cookies: cookies,
+                  },
+                };
+              }
+              throw new Error('Missing auth token!');
+            },
+          },
+        },
+      }),
+    }),
+  ],
   controllers: [AppController],
   providers: [AppService],
 })
