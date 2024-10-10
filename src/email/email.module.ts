@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { join } from 'path';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { EjsAdapter } from '@nestjs-modules/mailer/dist/adapters/ejs.adapter';
-import { EmailService } from 'src/services/email.service';
+import { EmailService } from 'src/email/email.service';
 @Global()
 @Module({
   imports: [
@@ -21,7 +21,7 @@ import { EmailService } from 'src/services/email.service';
           from: 'Task',
         },
         template: {
-          dir: `./src/email-templates`,
+          dir: `./src/email/templates`,
           adapter: new EjsAdapter(),
           options: {
             strict: false,

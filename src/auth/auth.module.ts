@@ -4,7 +4,7 @@ import { AuthService } from './auth.service';
 import { AuthResolver } from './auth.resolver';
 import { MongooseModule } from '@nestjs/mongoose';
 import { User, UserSchema } from 'src/schemas/user.schema';
-import { EmailModule } from 'src/modules/email.module';
+import { EmailModule } from 'src/email/email.module';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 

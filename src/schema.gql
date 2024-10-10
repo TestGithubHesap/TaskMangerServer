@@ -35,7 +35,7 @@ type Query {
 
 type Mutation {
   registerUser(input: RegisterUserInput!): RegisterUserObject!
-  activateUser(input: ActivationUserInput!): User!
+  activationUser(input: ActivationUserInput!): User!
 }
 
 input RegisterUserInput {

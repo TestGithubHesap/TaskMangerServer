@@ -1,11 +1,11 @@
 import { Args, Mutation, Resolver } from '@nestjs/graphql';
 import { UseInterceptors } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { RegisterUserInput } from 'src/types/InputTypes/RegisterUserInput';
-import { RegisterUserObject } from 'src/types/ObjectTypes/RegisterUserObject';
+import { RegisterUserInput } from 'src/auth/dto/RegisterUserInput';
+import { RegisterUserObject } from 'src/types/object-types/RegisterUserObject';
 import { User } from 'src/schemas/user.schema';
-import { ActivationUserInput } from 'src/types/InputTypes/ActivationUserInput';
-import { GraphQLErrorInterceptor } from 'src/interceptors/graphql-error.interceptor';
+import { ActivationUserInput } from 'src/auth/dto/ActivationUserInput';
+import { GraphQLErrorInterceptor } from 'src/common/interceptors/graphql-error.interceptor';
 
 @Resolver()
 @UseInterceptors(GraphQLErrorInterceptor)
@@ -20,7 +20,9 @@ export class AuthResolver {
   }
 
   @Mutation(() => User)
-  async activateUser(@Args('input') input: ActivationUserInput): Promise<User> {
+  async activationUser(
+    @Args('input') input: ActivationUserInput,
+  ): Promise<User> {
     return this.authService.activationUser(input);
   }
 }

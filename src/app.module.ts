@@ -3,13 +3,14 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { UserModule } from './user/user.module';
-import { parseCookies } from './utils';
+
 import { GraphQLModule } from '@nestjs/graphql';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ApolloDriver } from '@nestjs/apollo';
 import { join } from 'path';
 import { PubSubModule } from './modules/pubSub.module';
 import { MongoDBModule } from './modules/mongodb.module';
+import { parseCookies } from './utils/parseCookies';
 
 @Module({
   imports: [
