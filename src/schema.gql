@@ -29,6 +29,12 @@ type RegisterUserObject {
   activationToken: String!
 }
 
+type LoginUserObject {
+  user: User
+  access_token: String!
+  refresh_token: String!
+}
+
 type Query {
   getHelloUser: String!
 }
@@ -36,6 +42,7 @@ type Query {
 type Mutation {
   registerUser(input: RegisterUserInput!): RegisterUserObject!
   activationUser(input: ActivationUserInput!): User!
+  loginUser(input: LoginUserInput!): LoginUserObject!
 }
 
 input RegisterUserInput {
@@ -50,4 +57,9 @@ input RegisterUserInput {
 input ActivationUserInput {
   activationToken: String!
   activationCode: String!
+}
+
+input LoginUserInput {
+  email: String!
+  password: String!
 }

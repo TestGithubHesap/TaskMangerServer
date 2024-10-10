@@ -8,6 +8,7 @@ import { RegisterUserInput } from 'src/auth/dto/RegisterUserInput';
 import { ActivationUserInput } from 'src/auth/dto/ActivationUserInput';
 import * as bcrypt from 'bcrypt';
 import { GraphQLError } from 'graphql';
+import { LoginUserInput } from './dto/LoginUserInput';
 
 // Configuration constants
 const ACTIVATION_CODE_LENGTH = 4;
@@ -35,6 +36,7 @@ export class AuthService {
     });
   }
 
+  //Register
   private generateActivationCode(): string {
     return Math.floor(Math.random() * 10 ** ACTIVATION_CODE_LENGTH)
       .toString()
@@ -42,7 +44,7 @@ export class AuthService {
   }
 
   private async checkExistingUser(email: string): Promise<void> {
-    const existingUser = await this.userModel.findOne({ email });
+    const existingUser = await this.findUserByEmail(email);
     if (existingUser) {
       this.handleError(
         'An account with that email already exists!',
@@ -50,7 +52,10 @@ export class AuthService {
       );
     }
   }
-
+  private async findUserByEmail(email: string): Promise<User | null> {
+    const user = await this.userModel.findOne({ email });
+    return user;
+  }
   async createActivateToken(user: RegisterUserInput): Promise<string> {
     try {
       const activationCode = this.generateActivationCode();
@@ -135,4 +140,67 @@ export class AuthService {
       );
     }
   }
+  //Register End
+
+  //Login
+  async doesPasswordMatch(
+    password: string,
+    hashedPassword: string,
+  ): Promise<boolean> {
+    return bcrypt.compare(password, hashedPassword);
+  }
+  async validateUser(email: string, password: string): Promise<User> {
+    try {
+      const existingUser = await this.findUserByEmail(email);
+      if (!existingUser) {
+        this.handleError(
+          'An account with that email already exists!',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      const doesPasswordMatch = await this.doesPasswordMatch(
+        password,
+        existingUser.password,
+      );
+      if (!doesPasswordMatch) {
+        this.handleError('Invalid credentials!', HttpStatus.UNAUTHORIZED);
+      }
+      return existingUser;
+    } catch (error) {
+      this.handleError(
+        'Failed to validate user',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
+    }
+  }
+  private generateRefreshToken(email: string, userId: string): string {
+    const payload = { email, sub: userId };
+    return this.jwtService.sign(payload, {
+      secret: process.env.JWT_REFRESH_SECRET,
+      expiresIn: '7d',
+    });
+  }
+  async loginUser(loginUser: LoginUserInput): Promise<{
+    user: User;
+    access_token: string;
+    refresh_token: string;
+  }> {
+    const { email, password } = loginUser;
+    try {
+      const user = await this.validateUser(email, password);
+      const payload = { email: user.email, sub: user._id };
+      const access_token = await this.jwtService.signAsync(payload);
+      const refresh_token = this.generateRefreshToken(email, user._id);
+      return { user, access_token, refresh_token };
+    } catch (error) {
+      this.handleError(
+        'Failed to login user',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
+    }
+  }
+  //Login End
 }
