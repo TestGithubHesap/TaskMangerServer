@@ -10,6 +10,7 @@ import { LoginUserObject } from 'src/types/object-types/LoginUserObject';
 import { LoginUserInput } from './dto/LoginUserInput';
 import { AuthGuard } from './guards/auth.guard';
 import { Response } from 'express';
+import { CurrentUser } from 'src/common/decorators/user.decorator';
 
 @Resolver()
 @UseInterceptors(GraphQLErrorInterceptor)
@@ -42,9 +43,9 @@ export class AuthResolver {
 
   @Query(() => String)
   @UseGuards(AuthGuard)
-  async getMe(@Context() context) {
+  async getMe(@Context() context, @CurrentUser() user) {
     const { req, res } = context;
-    console.log(req.user);
+    console.log(user);
     return 'aaa';
   }
 
@@ -54,16 +55,16 @@ export class AuthResolver {
     const { res } = context;
     try {
       res.clearCookie('refresh_token', {
-        path: '/', 
-        httpOnly: true, 
-        secure: true, 
-        sameSite: 'strict', 
+        path: '/',
+        httpOnly: true,
+        secure: true,
+        sameSite: 'strict',
       });
       res.clearCookie('access_token', {
-        path: '/', 
-        httpOnly: true, 
-        secure: true, 
-        sameSite: 'strict', 
+        path: '/',
+        httpOnly: true,
+        secure: true,
+        sameSite: 'strict',
       });
       return 'successfully logged out ';
     } catch (error) {
