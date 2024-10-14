@@ -1,9 +1,9 @@
 import { Args, Context, Mutation, Query, Resolver } from '@nestjs/graphql';
-import { UseGuards, UseInterceptors } from '@nestjs/common';
+import { HttpStatus, UseGuards, UseInterceptors } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RegisterUserInput } from 'src/auth/dto/RegisterUserInput';
 import { RegisterUserObject } from 'src/types/object-types/RegisterUserObject';
-import { User } from 'src/schemas/user.schema';
+import { User, UserRole } from 'src/schemas/user.schema';
 import { ActivationUserInput } from 'src/auth/dto/ActivationUserInput';
 import { GraphQLErrorInterceptor } from 'src/common/interceptors/graphql-error.interceptor';
 import { LoginUserObject } from 'src/types/object-types/LoginUserObject';
@@ -11,12 +11,27 @@ import { LoginUserInput } from './dto/LoginUserInput';
 import { AuthGuard } from './guards/auth.guard';
 import { Response } from 'express';
 import { CurrentUser } from 'src/common/decorators/user.decorator';
+import { User as AuthUser } from '../types/user';
+import { GraphQLError } from 'graphql';
+import { RolesGuard } from './guards/role.guard';
+import { Roles } from './guards/roles.decorator';
 
 @Resolver()
 @UseInterceptors(GraphQLErrorInterceptor)
 export class AuthResolver {
   constructor(private readonly authService: AuthService) {}
-
+  private handleError(
+    message: string,
+    statusCode: HttpStatus,
+    error?: any,
+  ): never {
+    throw new GraphQLError(message, {
+      extensions: {
+        code: statusCode,
+        error,
+      },
+    });
+  }
   @Mutation(() => RegisterUserObject)
   async registerUser(
     @Args('input') input: RegisterUserInput,
@@ -41,12 +56,15 @@ export class AuthResolver {
     return data;
   }
 
-  @Query(() => String)
+  @Query(() => User)
   @UseGuards(AuthGuard)
-  async getMe(@Context() context, @CurrentUser() user) {
-    const { req, res } = context;
-    console.log(user);
-    return 'aaa';
+  async getMe(@Context() context, @CurrentUser() user: AuthUser) {
+    if (!user) {
+      this.handleError('user not found', HttpStatus.NOT_FOUND);
+    }
+
+    const data = this.authService.getMe(user._id);
+    return data;
   }
 
   @Mutation(() => String)
@@ -70,5 +88,13 @@ export class AuthResolver {
     } catch (error) {
       throw new Error(`Logout failed: ${error.message}`);
     }
+  }
+
+  @Query(() => String)
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  async rolecheck(@CurrentUser() user: AuthUser) {
+    console.log(user);
+    return 'asaslas';
   }
 }

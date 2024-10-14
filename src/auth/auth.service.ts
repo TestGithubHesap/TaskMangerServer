@@ -2,7 +2,7 @@ import { HttpStatus, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { User, UserDocument } from 'src/schemas/user.schema';
+import { User, UserDocument, UserRole } from 'src/schemas/user.schema';
 import { EmailService } from 'src/email/email.service';
 import { RegisterUserInput } from 'src/auth/dto/RegisterUserInput';
 import { ActivationUserInput } from 'src/auth/dto/ActivationUserInput';
@@ -175,8 +175,12 @@ export class AuthService {
       );
     }
   }
-  private generateRefreshToken(email: string, userId: string): string {
-    const payload = { email, sub: userId };
+  private generateRefreshToken(
+    email: string,
+    userId: string,
+    roles: UserRole[],
+  ): string {
+    const payload = { email, sub: userId, roles };
     return this.jwtService.sign(payload, {
       secret: process.env.JWT_REFRESH_SECRET,
       expiresIn: '7d',
@@ -190,9 +194,13 @@ export class AuthService {
     const { email, password } = loginUser;
     try {
       const user = await this.validateUser(email, password);
-      const payload = { email: user.email, sub: user._id };
+      const payload = { email: user.email, sub: user._id, roles: user.roles };
       const access_token = await this.jwtService.signAsync(payload);
-      const refresh_token = this.generateRefreshToken(email, user._id);
+      const refresh_token = this.generateRefreshToken(
+        email,
+        user._id,
+        user.roles,
+      );
       return { user, access_token, refresh_token };
     } catch (error) {
       this.handleError(
@@ -214,7 +222,7 @@ export class AuthService {
 
       const user = await this.userModel
         .findById(payload.sub)
-        .select('email _id');
+        .select('email _id roles');
 
       if (!user) {
         this.handleError('Invalid refresh token', HttpStatus.UNAUTHORIZED);
@@ -222,11 +230,13 @@ export class AuthService {
       const access_token = await this.jwtService.signAsync({
         email: user.email,
         sub: user._id,
+        roles: user.roles,
       });
       return {
         user: {
           _id: user._id,
           email: user.email,
+          roles: user.roles,
         },
         access_token,
       };
@@ -243,12 +253,13 @@ export class AuthService {
       this.handleError('Invalid credentials!', HttpStatus.UNAUTHORIZED);
     }
     try {
-      const { email, sub, exp } = await this.jwtService.verifyAsync(jwt);
+      const { email, sub, exp, roles } = await this.jwtService.verifyAsync(jwt);
 
       return {
         user: {
           _id: sub,
           email: email,
+          roles: roles,
         },
         exp,
       };

@@ -36,7 +36,8 @@ type LoginUserObject {
 }
 
 type Query {
-  getMe: String!
+  getMe: User!
+  rolecheck: String!
   getHelloUser: String!
 }
 
