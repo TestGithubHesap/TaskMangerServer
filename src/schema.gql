@@ -46,6 +46,8 @@ type Mutation {
   activationUser(input: ActivationUserInput!): User!
   loginUser(input: LoginUserInput!): LoginUserObject!
   logout: String!
+  forgotPassword(email: String!): String!
+  resetPassword(input: ResetPasswordInput!): String!
 }
 
 input RegisterUserInput {
@@ -64,5 +66,10 @@ input ActivationUserInput {
 
 input LoginUserInput {
   email: String!
+  password: String!
+}
+
+input ResetPasswordInput {
+  token: String!
   password: String!
 }

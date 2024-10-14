@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { GqlExecutionContext } from '@nestjs/graphql';
 import { Request, Response } from 'express';
-import { AuthService } from '../auth.service';
+import { AuthService } from '../../auth/auth.service';
 import { AuthenticatedRequest } from 'src/types/request/authenticatedRequest';
 
 @Injectable()

@@ -8,13 +8,14 @@ import { ActivationUserInput } from 'src/auth/dto/ActivationUserInput';
 import { GraphQLErrorInterceptor } from 'src/common/interceptors/graphql-error.interceptor';
 import { LoginUserObject } from 'src/types/object-types/LoginUserObject';
 import { LoginUserInput } from './dto/LoginUserInput';
-import { AuthGuard } from './guards/auth.guard';
+import { AuthGuard } from '../common/guards/auth.guard';
 import { Response } from 'express';
 import { CurrentUser } from 'src/common/decorators/user.decorator';
 import { User as AuthUser } from '../types/user';
 import { GraphQLError } from 'graphql';
-import { RolesGuard } from './guards/role.guard';
-import { Roles } from './guards/roles.decorator';
+import { RolesGuard } from '../common/guards/role.guard';
+import { Roles } from '../common/decorators/roles.decorator';
+import { ResetPasswordInput } from './dto/ResetPasswordInput';
 
 @Resolver()
 @UseInterceptors(GraphQLErrorInterceptor)
@@ -96,5 +97,15 @@ export class AuthResolver {
   async rolecheck(@CurrentUser() user: AuthUser) {
     console.log(user);
     return 'asaslas';
+  }
+
+  @Mutation(() => String)
+  async forgotPassword(@Args('email') email: string) {
+    return this.authService.forgotPassword(email);
+  }
+
+  @Mutation(() => String)
+  async resetPassword(@Args('input') input: ResetPasswordInput) {
+    return this.authService.resetPassword(input.password, input.token);
   }
 }
