@@ -2,6 +2,16 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+type Company {
+  _id: ID!
+  name: String!
+  address: String
+  phoneNumber: String
+  website: String
+  createdAt: String!
+  updatedAt: String!
+}
+
 type User {
   _id: ID!
   firstName: String!
@@ -15,6 +25,8 @@ type User {
   createdAt: String!
   updatedAt: String!
   status: String!
+  company: Company
+  isCompanyAdmin: Boolean!
 }
 
 """User roles"""

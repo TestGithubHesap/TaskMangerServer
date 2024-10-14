@@ -7,6 +7,7 @@ import {
 } from '@nestjs/graphql';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
+import { Company } from './company.schema';
 
 export type UserDocument = User & Document;
 export enum UserRole {
@@ -16,9 +17,8 @@ export enum UserRole {
   USER = 'user',
 }
 
-
 registerEnumType(UserRole, {
-  name: 'UserRole', 
+  name: 'UserRole',
   description: 'User roles',
 });
 
@@ -29,15 +29,15 @@ registerEnumType(UserRole, {
       return ret;
     },
   },
-  timestamps: true, 
+  timestamps: true,
 })
-@ObjectType() 
+@ObjectType()
 export class User {
   @Field(() => ID)
   _id: string;
 
   @Prop({ required: true })
-  @Field() 
+  @Field()
   firstName: string;
 
   @Prop({ required: true })
@@ -53,15 +53,15 @@ export class User {
   email: string;
 
   @Prop({ required: true })
-  @HideField() 
+  @HideField()
   password: string;
 
   @Prop()
-  @Field({ nullable: true }) 
+  @Field({ nullable: true })
   profilePhoto: string;
 
   @Prop({ type: [String], enum: UserRole, default: [UserRole.USER] })
-  @Field(() => [UserRole]) 
+  @Field(() => [UserRole])
   roles: UserRole[];
 
   @Prop({ default: false })
@@ -69,19 +69,26 @@ export class User {
   isDeleted: boolean;
 
   @Prop({ nullable: true })
-  @Field(() => String, { nullable: true }) 
+  @Field(() => String, { nullable: true })
   deletedAt?: Date;
 
-  @Field() 
+  @Field()
   createdAt: string;
 
-  @Field() 
+  @Field()
   updatedAt: string;
 
   @Prop({ required: true, default: 'offline' })
   @Field()
   status: string;
+  
+  @Prop({ type: Types.ObjectId, ref: 'Company', nullable: true })
+  @Field(() => Company, { nullable: true })
+  company?: Types.ObjectId;
 
+  @Prop({ default: false })
+  @Field()
+  isCompanyAdmin: boolean;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
