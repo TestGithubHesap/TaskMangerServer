@@ -27,11 +27,11 @@ export class CompanyJoinRequest {
 
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   @Field(() => User)
-  user: Types.ObjectId; 
+  user: User;
 
   @Prop({ type: Types.ObjectId, ref: 'Company', required: true })
   @Field(() => Company)
-  company: Types.ObjectId; 
+  company: Types.ObjectId;
 
   @Prop({
     type: String,
@@ -39,7 +39,7 @@ export class CompanyJoinRequest {
     default: JoinRequestStatus.PENDING,
   })
   @Field(() => JoinRequestStatus)
-  status: JoinRequestStatus; 
+  status: JoinRequestStatus;
 
   @Field()
   createdAt: string;

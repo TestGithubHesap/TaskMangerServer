@@ -11,6 +11,7 @@ import { join } from 'path';
 import { PubSubModule } from './modules/pubSub.module';
 import { MongoDBModule } from './modules/mongodb.module';
 import { parseCookies } from './utils/parseCookies';
+import { CompanyModule } from './company/company.module';
 
 @Module({
   imports: [
@@ -53,6 +54,7 @@ import { parseCookies } from './utils/parseCookies';
         },
       }),
     }),
+    CompanyModule,
   ],
   controllers: [AppController],
   providers: [AppService],

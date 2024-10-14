@@ -47,10 +47,27 @@ type LoginUserObject {
   refresh_token: String!
 }
 
+type CompanyJoinRequest {
+  _id: ID!
+  user: User!
+  company: Company!
+  status: JoinRequestStatus!
+  createdAt: String!
+  updatedAt: String!
+}
+
+"""Status of the company join request"""
+enum JoinRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 type Query {
   getMe: User!
   rolecheck: String!
   getHelloUser: String!
+  getCompany(companyId: String!): Company!
 }
 
 type Mutation {
@@ -60,6 +77,9 @@ type Mutation {
   logout: String!
   forgotPassword(email: String!): String!
   resetPassword(input: ResetPasswordInput!): String!
+  createCompany(input: CreateCompanyInput!): Company!
+  requestToJoinCompany(companyId: String!): CompanyJoinRequest!
+  respondToJoinRequest(requestId: String!, approve: Boolean!): CompanyJoinRequest!
 }
 
 input RegisterUserInput {
@@ -84,4 +104,11 @@ input LoginUserInput {
 input ResetPasswordInput {
   token: String!
   password: String!
+}
+
+input CreateCompanyInput {
+  name: String!
+  address: String
+  phoneNumber: String
+  website: String
 }

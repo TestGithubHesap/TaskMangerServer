@@ -30,5 +30,6 @@ import {
   ],
   controllers: [AuthController],
   providers: [AuthService, AuthResolver],
+  exports: [AuthService],
 })
 export class AuthModule {}
