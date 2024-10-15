@@ -1,4 +1,4 @@
-import { Args, Mutation, Resolver } from '@nestjs/graphql';
+import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { TaskService } from './task.service';
 import { CreateTaskInput } from './dto/createTaskInput';
 import { Task } from 'src/schemas/task.schema';
@@ -44,10 +44,23 @@ export class TaskResolver {
   @UseGuards(AuthGuard)
   async updateTaskHierarchy(
     @Args('input') input: UpdateTaskHierarchyInput,
+    @CurrentUser() user: AuthUser,
   ): Promise<Task> {
+    if (!user) {
+      this.handleError('user not found', HttpStatus.NOT_FOUND);
+    }
     return this.taskService.updateTaskHierarchy(
+      user._id,
       input.taskId,
       input.parentTaskId,
     );
+  }
+
+  @Query(() => [Task])
+  @UseGuards(AuthGuard)
+  async getAllTasksByProject(
+    @Args('projectId') projectId: string,
+  ): Promise<Task[]> {
+    return this.taskService.getAllTasksByProject(projectId);
   }
 }

@@ -47,7 +47,7 @@ export class Task {
 
   @Prop({ type: Types.ObjectId, ref: 'Project', required: true })
   @Field(() => Project)
-  project: Types.ObjectId;
+  project: Project;
 
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   @Field(() => User)
@@ -89,4 +89,4 @@ export class Task {
 }
 
 export type TaskDocument = Task & Document;
-export const  TaskSchema = SchemaFactory.createForClass(Task);
+export const TaskSchema = SchemaFactory.createForClass(Task);

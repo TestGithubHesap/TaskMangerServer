@@ -123,6 +123,7 @@ type Query {
   getMe: User!
   rolecheck: String!
   getCompany(companyId: String!): Company!
+  getAllTasksByProject(projectId: String!): [Task!]!
 }
 
 type Mutation {

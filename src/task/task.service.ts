@@ -5,10 +5,14 @@ import { Model } from 'mongoose';
 import { Task, TaskDocument } from 'src/schemas/task.schema';
 import { CreateTaskInput } from './dto/createTaskInput';
 import { GraphQLError } from 'graphql';
+import { Project, ProjectDocument } from 'src/schemas/project.schema';
 
 @Injectable()
 export class TaskService {
-  constructor(@InjectModel(Task.name) private taskModel: Model<TaskDocument>) {}
+  constructor(
+    @InjectModel(Task.name) private taskModel: Model<TaskDocument>,
+    @InjectModel(Project.name) private projectModel: Model<ProjectDocument>,
+  ) {}
 
   private parseDateString(dateString: string): Date {
     const [day, month, year] = dateString.split('.');
@@ -51,19 +55,30 @@ export class TaskService {
   }
 
   async updateTaskHierarchy(
+    userId: string,
     taskId: string,
     parentTaskId: string,
   ): Promise<Task> {
     try {
       const [task, parentTask] = await Promise.all([
         this.taskModel.findById(taskId),
-        this.taskModel.findById(parentTaskId),
+        this.taskModel.findById(parentTaskId).populate({
+          path: 'project',
+          select: '_id projectManager',
+        }),
       ]);
 
       if (!task || !parentTask) {
         this.handleError('Task or parent task not found', HttpStatus.NOT_FOUND);
       }
-      if (task.project !== parentTask.project) {
+
+      if (parentTask.project.projectManager.toString() !== userId) {
+        this.handleError(
+          'Unauthorized: Only the project manager can update the task hierarchy',
+          HttpStatus.FORBIDDEN,
+        );
+      }
+      if (task.project.toString() !== parentTask.project._id.toString()) {
         this.handleError(
           'Tasks are in different projects',
           HttpStatus.BAD_REQUEST,
@@ -134,5 +149,16 @@ export class TaskService {
 
   async findOne(id: string): Promise<Task> {
     return this.taskModel.findById(id).exec();
+  }
+
+  async getAllTasksByProject(projectId: string) {
+    return this.taskModel
+      .find({
+        project: projectId,
+      })
+      .populate({
+        path: 'parentTask',
+        select: '_id',
+      });
   }
 }
