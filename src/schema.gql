@@ -123,6 +123,7 @@ type Query {
   getMe: User!
   rolecheck: String!
   getCompany(companyId: String!): Company!
+  getAllProjectsByCompany(companyId: String!): [Project!]!
   getAllTasksByProject(projectId: String!): [Task!]!
 }
 

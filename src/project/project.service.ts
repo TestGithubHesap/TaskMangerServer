@@ -5,12 +5,14 @@ import { Project, ProjectDocument } from 'src/schemas/project.schema';
 import { CreateProjectInput } from './dto/createProjectInput';
 import { User, UserDocument, UserRole } from 'src/schemas/user.schema';
 import { GraphQLError } from 'graphql';
+import { Company } from 'src/schemas/company.schema';
 
 @Injectable()
 export class ProjectService {
   constructor(
     @InjectModel(Project.name) private projectModel: Model<ProjectDocument>,
     @InjectModel(User.name) private userModel: Model<UserDocument>,
+    // @InjectModel(User.name) private userModel: Model<UserDocument>,
   ) {}
   private handleError(
     message: string,
@@ -63,5 +65,22 @@ export class ProjectService {
         error,
       );
     }
+  }
+
+  async getAllProjectsByCompany(
+    userId: string,
+    companyId: string,
+  ): Promise<Project[]> {
+    const user = await this.userModel.findById(userId);
+
+    if (!user || user.company.toString() !== companyId) {
+      this.handleError(
+        'You are not authorized to view projects',
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+    return this.projectModel.find({
+      company: companyId,
+    });
   }
 }

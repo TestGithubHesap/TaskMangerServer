@@ -1,4 +1,4 @@
-import { Args, Mutation, Resolver } from '@nestjs/graphql';
+import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { ProjectService } from './project.service';
 import { Project } from 'src/schemas/project.schema';
 import { CreateProjectInput } from './dto/createProjectInput';
@@ -37,5 +37,17 @@ export class ProjectResolver {
       this.handleError('user not found', HttpStatus.NOT_FOUND);
     }
     return this.projectService.createProject(user._id, input);
+  }
+  @UseGuards(AuthGuard)
+  @Roles(UserRole.ADMIN, UserRole.EXECUTIVE)
+  @Query(() => [Project])
+  async getAllProjectsByCompany(
+    @Args('companyId') companyId: string,
+    @CurrentUser() user: AuthUser,
+  ): Promise<Project[]> {
+    if (!user) {
+      this.handleError('user not found', HttpStatus.NOT_FOUND);
+    }
+    return this.projectService.getAllProjectsByCompany(user._id, companyId);
   }
 }
