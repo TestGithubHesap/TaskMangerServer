@@ -1,19 +1,20 @@
 import { Args, Mutation, Resolver } from '@nestjs/graphql';
-import { ProjectService } from './project.service';
-import { Project } from 'src/schemas/project.schema';
-import { CreateProjectInput } from './dto/createProjectInput';
+import { TaskService } from './task.service';
+import { CreateTaskInput } from './dto/createTaskInput';
+import { Task } from 'src/schemas/task.schema';
 import { HttpStatus, UseGuards, UseInterceptors } from '@nestjs/common';
 import { AuthGuard } from 'src/common/guards/auth.guard';
+import { Roles } from 'src/common/decorators/roles.decorator';
+import { UserRole } from 'src/schemas/user.schema';
 import { CurrentUser } from 'src/common/decorators/user.decorator';
 import { User as AuthUser } from 'src/types/user';
 import { GraphQLError } from 'graphql';
-import { Roles } from 'src/common/decorators/roles.decorator';
-import { UserRole } from 'src/schemas/user.schema';
 import { GraphQLErrorInterceptor } from 'src/common/interceptors/graphql-error.interceptor';
-@Resolver('Project')
+import { UpdateTaskHierarchyInput } from './dto/updateTaskHierarchyInput';
+@Resolver('Task')
 @UseInterceptors(GraphQLErrorInterceptor)
-export class ProjectResolver {
-  constructor(private readonly projectService: ProjectService) {}
+export class TaskResolver {
+  constructor(private readonly taskService: TaskService) {}
   private handleError(
     message: string,
     statusCode: HttpStatus,
@@ -28,14 +29,25 @@ export class ProjectResolver {
   }
   @UseGuards(AuthGuard)
   @Roles(UserRole.ADMIN, UserRole.EXECUTIVE)
-  @Mutation(() => Project)
-  async createProject(
-    @Args('input') input: CreateProjectInput,
+  @Mutation(() => Task)
+  async createTask(
+    @Args('input') input: CreateTaskInput,
     @CurrentUser() user: AuthUser,
-  ): Promise<Project> {
+  ): Promise<Task> {
     if (!user) {
       this.handleError('user not found', HttpStatus.NOT_FOUND);
     }
-    return this.projectService.createProject(user._id, input);
+    return this.taskService.createTask(user._id, input);
+  }
+
+  @Mutation(() => Task)
+  @UseGuards(AuthGuard)
+  async updateTaskHierarchy(
+    @Args('input') input: UpdateTaskHierarchyInput,
+  ): Promise<Task> {
+    return this.taskService.updateTaskHierarchy(
+      input.taskId,
+      input.parentTaskId,
+    );
   }
 }

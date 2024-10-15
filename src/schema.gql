@@ -69,6 +69,7 @@ type Project {
   description: String
   company: Company!
   projectManager: User!
+  createdByUser: User!
   team: [User!]!
   startDate: String!
   endDate: String!
@@ -83,6 +84,39 @@ enum ProjectStatus {
   COMPLETED
   ENDED
   CANCELLED
+}
+
+type Task {
+  _id: ID!
+  title: String!
+  description: String
+  project: Project!
+  assignee: User!
+  parentTask: Task
+  createdByUser: User!
+  subTasks: [Task!]!
+  status: TaskStatus!
+  priority: TaskPriority!
+  dueDate: String!
+  completedAt: String
+  createdAt: String!
+  updatedAt: String!
+}
+
+"""Task statuses"""
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  REVIEW
+  DONE
+}
+
+"""Task priorities"""
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
 }
 
 type Query {
@@ -103,6 +137,8 @@ type Mutation {
   requestToJoinCompany(companyId: String!): CompanyJoinRequest!
   respondToJoinRequest(requestId: String!, approve: Boolean!): CompanyJoinRequest!
   createProject(input: CreateProjectInput!): Project!
+  createTask(input: CreateTaskInput!): Task!
+  updateTaskHierarchy(input: UpdateTaskHierarchyInput!): Task!
 }
 
 input RegisterUserInput {
@@ -156,4 +192,19 @@ input CreateProjectInput {
   teamMemberIds: [String!]!
   startDate: String!
   endDate: String!
+}
+
+input CreateTaskInput {
+  title: String!
+  description: String
+  projectId: String!
+  assigneeId: String!
+  status: TaskStatus!
+  priority: TaskPriority!
+  dueDate: String!
+}
+
+input UpdateTaskHierarchyInput {
+  taskId: ID!
+  parentTaskId: ID!
 }

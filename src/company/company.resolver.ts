@@ -3,7 +3,7 @@ import { CompanyService } from './company.service';
 
 import { Company } from 'src/schemas/company.schema';
 import { CreateCompanyInput } from './dto/createCompany.nput';
-import { HttpStatus, UseGuards } from '@nestjs/common';
+import { HttpStatus, UseGuards, UseInterceptors } from '@nestjs/common';
 import { AuthGuard } from 'src/common/guards/auth.guard';
 import { RolesGuard } from 'src/common/guards/role.guard';
 import { Roles } from 'src/common/decorators/roles.decorator';
@@ -12,7 +12,9 @@ import { CurrentUser } from 'src/common/decorators/user.decorator';
 import { User as AuthUser } from '../types/user';
 import { GraphQLError } from 'graphql';
 import { CompanyJoinRequest } from 'src/schemas/companyJoinRequest.schema';
+import { GraphQLErrorInterceptor } from 'src/common/interceptors/graphql-error.interceptor';
 @Resolver('Company')
+@UseInterceptors(GraphQLErrorInterceptor)
 export class CompanyResolver {
   constructor(private readonly companyService: CompanyService) {}
   private handleError(

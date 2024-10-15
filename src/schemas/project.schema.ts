@@ -37,6 +37,10 @@ export class Project {
   @Field(() => User)
   projectManager: Types.ObjectId;
 
+  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
+  @Field(() => User)
+  createdByUser: Types.ObjectId;
+
   @Prop({ type: [{ type: Types.ObjectId, ref: 'User' }] })
   @Field(() => [User])
   team: Types.ObjectId[];

@@ -53,6 +53,7 @@ export class ProjectService {
         team: createProjectInput.teamMemberIds,
         startDate: this.parseDateString(createProjectInput.startDate),
         endDate: this.parseDateString(createProjectInput.endDate),
+        createdByUser: user._id,
       });
       return createdProject.save();
     } catch (error) {

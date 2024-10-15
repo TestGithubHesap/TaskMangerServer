@@ -13,6 +13,7 @@ import { MongoDBModule } from './modules/mongodb.module';
 import { parseCookies } from './utils/parseCookies';
 import { CompanyModule } from './company/company.module';
 import { ProjectModule } from './project/project.module';
+import { TaskModule } from './task/task.module';
 
 @Module({
   imports: [
@@ -57,6 +58,7 @@ import { ProjectModule } from './project/project.module';
     }),
     CompanyModule,
     ProjectModule,
+    TaskModule,
   ],
   controllers: [AppController],
   providers: [AppService],

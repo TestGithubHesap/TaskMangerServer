@@ -57,6 +57,10 @@ export class Task {
   @Field(() => Task, { nullable: true })
   parentTask?: Types.ObjectId;
 
+  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
+  @Field(() => User)
+  createdByUser: Types.ObjectId;
+
   @Prop({ type: [{ type: Types.ObjectId, ref: 'Task' }] })
   @Field(() => [Task])
   subTasks: Types.ObjectId[];
@@ -85,4 +89,4 @@ export class Task {
 }
 
 export type TaskDocument = Task & Document;
-export const TaskSchema = SchemaFactory.createForClass(Task);
+export const  TaskSchema = SchemaFactory.createForClass(Task);
