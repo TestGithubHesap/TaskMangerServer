@@ -66,7 +66,6 @@ enum JoinRequestStatus {
 type Query {
   getMe: User!
   rolecheck: String!
-  getHelloUser: String!
   getCompany(companyId: String!): Company!
 }
 
@@ -77,6 +76,7 @@ type Mutation {
   logout: String!
   forgotPassword(email: String!): String!
   resetPassword(input: ResetPasswordInput!): String!
+  updateUser(input: UpdateUserInput!): User!
   createCompany(input: CreateCompanyInput!): Company!
   requestToJoinCompany(companyId: String!): CompanyJoinRequest!
   respondToJoinRequest(requestId: String!, approve: Boolean!): CompanyJoinRequest!
@@ -104,6 +104,19 @@ input LoginUserInput {
 input ResetPasswordInput {
   token: String!
   password: String!
+}
+
+input UpdateUserInput {
+  _id: ID!
+  firstName: String
+  lastName: String
+  userName: String
+  email: String
+  profilePhoto: String
+  roles: [UserRole!]
+  status: String
+  company: ID
+  isCompanyAdmin: Boolean
 }
 
 input CreateCompanyInput {
