@@ -63,6 +63,28 @@ enum JoinRequestStatus {
   REJECTED
 }
 
+type Project {
+  _id: ID!
+  name: String!
+  description: String
+  company: Company!
+  projectManager: User!
+  team: [User!]!
+  startDate: String!
+  endDate: String!
+  status: ProjectStatus!
+  createdAt: String!
+  updatedAt: String!
+}
+
+"""Project statuses"""
+enum ProjectStatus {
+  ACTIVE
+  COMPLETED
+  ENDED
+  CANCELLED
+}
+
 type Query {
   getMe: User!
   rolecheck: String!
@@ -80,6 +102,7 @@ type Mutation {
   createCompany(input: CreateCompanyInput!): Company!
   requestToJoinCompany(companyId: String!): CompanyJoinRequest!
   respondToJoinRequest(requestId: String!, approve: Boolean!): CompanyJoinRequest!
+  createProject(input: CreateProjectInput!): Project!
 }
 
 input RegisterUserInput {
@@ -124,4 +147,13 @@ input CreateCompanyInput {
   address: String
   phoneNumber: String
   website: String
+}
+
+input CreateProjectInput {
+  name: String!
+  description: String
+  projectManagerId: String!
+  teamMemberIds: [String!]!
+  startDate: String!
+  endDate: String!
 }

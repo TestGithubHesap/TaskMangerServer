@@ -1,9 +1,20 @@
-import { Field, ID, ObjectType } from '@nestjs/graphql';
+import { Field, ID, ObjectType, registerEnumType } from '@nestjs/graphql';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 import { User } from './user.schema';
 import { Company } from './company.schema';
 
+export enum ProjectStatus {
+  ACTIVE = 'active',
+  COMPLETED = 'completed',
+  ENDED = 'ended',
+  CANCELLED = 'cancelled',
+}
+
+registerEnumType(ProjectStatus, {
+  name: 'ProjectStatus',
+  description: 'Project statuses',
+});
 @Schema({ timestamps: true })
 @ObjectType()
 export class Project {
@@ -38,9 +49,9 @@ export class Project {
   @Field(() => String)
   endDate: Date;
 
-  @Prop({ default: 'active' })
-  @Field(() => String)
-  status: string;
+  @Prop({ type: String, enum: ProjectStatus, default: ProjectStatus.ACTIVE })
+  @Field(() => ProjectStatus)
+  status: ProjectStatus;
 
   @Field(() => String)
   createdAt: Date;
