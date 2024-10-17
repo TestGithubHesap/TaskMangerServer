@@ -1,7 +1,7 @@
 // task.service.ts
 import { Injectable, BadRequestException, HttpStatus } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { Task, TaskDocument } from 'src/schemas/task.schema';
 import { CreateTaskInput } from './dto/createTaskInput';
 import { GraphQLError } from 'graphql';
@@ -36,6 +36,11 @@ export class TaskService {
     createTaskDto: CreateTaskInput,
   ): Promise<Task> {
     try {
+      const project = await this.projectModel.findById(createTaskDto.projectId);
+      if (!project) {
+        this.handleError('Project not found', HttpStatus.BAD_REQUEST);
+      }
+
       const createdTask = new this.taskModel({
         ...createTaskDto,
         project: createTaskDto.projectId,
@@ -44,7 +49,13 @@ export class TaskService {
         createdByUser: userId,
       });
 
-      return await createdTask.save();
+      const savedTask = await createdTask.save();
+      const objectIdAssignee = new Types.ObjectId(createTaskDto.assigneeId);
+      if (!project.team.includes(objectIdAssignee)) {
+        project.team.push(objectIdAssignee);
+        await project.save();
+      }
+      return savedTask;
     } catch (error) {
       this.handleError(
         'Error creating task',

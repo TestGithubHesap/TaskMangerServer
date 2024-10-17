@@ -23,6 +23,18 @@ async function bootstrap() {
       },
     }),
   );
+
+  app.enableCors({
+    origin: ['http://localhost:5173'],
+    allowedHeaders: [
+      'Content-Type',
+      'apollo-require-preflight',
+      'Accept',
+      'Authorization',
+      'X-Requested-With',
+    ],
+    credentials: true,
+  });
   await app.listen(3000);
 }
 bootstrap();

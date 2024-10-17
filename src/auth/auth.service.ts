@@ -325,7 +325,7 @@ export class AuthService {
 
       await this.emailService.sendMail({
         email,
-        subject: 'Reset your Password!',
+        subject: 'Reset your Passwordd!',
         template: './forgot-password',
         name: user.firstName + user.lastName,
         activationCode: resetPasswordUrl,
@@ -343,13 +343,13 @@ export class AuthService {
 
   async generateForgotPasswordLink(userId: string): Promise<string> {
     const resetToken = uuidv4();
-    const expiresAt = new Date(Date.now() + 300000);
+    const expiresAt = new Date(Date.now() + 3600000);
     const passwordReset = new this.passwordResetModel({
       user: userId,
       token: resetToken,
       expiresAt,
     });
-    console.log(passwordReset);
+
     await passwordReset.save();
 
     return resetToken;
@@ -377,6 +377,7 @@ export class AuthService {
 
       return 'Password successfully reset';
     } catch (error) {
+      console.log(error);
       this.handleError(
         'Failed to Reset Password',
         HttpStatus.INTERNAL_SERVER_ERROR,

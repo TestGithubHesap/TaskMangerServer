@@ -39,7 +39,7 @@ import { TaskModule } from './task/task.module';
         },
         subscriptions: {
           'subscriptions-transport-ws': {
-            onConnect: (webSocket) => {
+            onConnect: (connectionParams, webSocket, context) => {
               const cookieString = webSocket.upgradeReq.headers.cookie || '';
               const cookies = parseCookies(cookieString);
 

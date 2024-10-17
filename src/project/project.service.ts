@@ -1,4 +1,4 @@
-import { HttpStatus, Injectable } from '@nestjs/common';
+import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Project, ProjectDocument } from 'src/schemas/project.schema';
@@ -6,6 +6,8 @@ import { CreateProjectInput } from './dto/createProjectInput';
 import { User, UserDocument, UserRole } from 'src/schemas/user.schema';
 import { GraphQLError } from 'graphql';
 import { Company } from 'src/schemas/company.schema';
+import { PUB_SUB } from 'src/modules/pubSub.module';
+import { RedisPubSub } from 'graphql-redis-subscriptions';
 
 @Injectable()
 export class ProjectService {
@@ -13,6 +15,8 @@ export class ProjectService {
     @InjectModel(Project.name) private projectModel: Model<ProjectDocument>,
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     // @InjectModel(User.name) private userModel: Model<UserDocument>,
+    @Inject(PUB_SUB)
+    private readonly pubSub: RedisPubSub,
   ) {}
   private handleError(
     message: string,
@@ -57,7 +61,17 @@ export class ProjectService {
         endDate: this.parseDateString(createProjectInput.endDate),
         createdByUser: user._id,
       });
-      return createdProject.save();
+      const savedProject = await createdProject.save();
+
+      this.pubSub.publish('createCompanyProject', {
+        createCompanyProject: {
+          _id: savedProject._id,
+          name: savedProject.name,
+          description: savedProject.description,
+          company: savedProject.company,
+        },
+      });
+      return savedProject;
     } catch (error) {
       this.handleError(
         'Error creating project',
@@ -69,18 +83,17 @@ export class ProjectService {
 
   async getAllProjectsByCompany(
     userId: string,
-    companyId: string,
   ): Promise<Project[]> {
     const user = await this.userModel.findById(userId);
 
-    if (!user || user.company.toString() !== companyId) {
+    if (!user) {
       this.handleError(
         'You are not authorized to view projects',
         HttpStatus.UNAUTHORIZED,
       );
     }
     return this.projectModel.find({
-      company: companyId,
+      company: user.company,
     });
   }
 }
