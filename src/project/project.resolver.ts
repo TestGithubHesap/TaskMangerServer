@@ -20,7 +20,7 @@ import { UserRole } from 'src/schemas/user.schema';
 import { GraphQLErrorInterceptor } from 'src/common/interceptors/graphql-error.interceptor';
 import { PUB_SUB } from 'src/modules/pubSub.module';
 import { RedisPubSub } from 'graphql-redis-subscriptions';
-import { TaskStatus } from 'src/schemas/task.schema';
+import { Task, TaskStatus } from 'src/schemas/task.schema';
 import { TaskSummary } from 'src/types/object-types/TaskSummaryObject';
 import { TaskService } from 'src/task/task.service';
 const CREATE_COMPANY_PROJECT = 'createCompanyProject';
@@ -74,6 +74,16 @@ export class ProjectResolver {
   async getProjectWithDetails(@Args('projectId') projectId: string) {
     return this.projectService.getProject(projectId);
   }
+  @ResolveField(() => [Task])
+  async tasks(@Parent() project: Project) {
+    const tasks = await this.taskService.getAllTasksByProjectDetail(
+      project._id.toString(),
+    );
+    console.log('hello');
+
+    return tasks;
+  }
+
   @ResolveField(() => TaskSummary)
   async taskSummary(@Parent() project: Project) {
     const tasks = await this.taskService.getAllTasksByProjectDetail(

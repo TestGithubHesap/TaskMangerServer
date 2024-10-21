@@ -101,11 +101,11 @@ export class ProjectService {
       .findById(projectId)
       .populate({
         path: 'projectManager',
-        select: '_id firstName email',
+        select: '_id firstName lastName profilePhoto',
       })
       .populate({
         path: 'team',
-        select: '_id firstName',
+        select: '_id firstName lastName profilePhoto',
         model: 'User',
       });
     // console.log(project);

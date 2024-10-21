@@ -178,6 +178,10 @@ export class TaskService {
       .find({
         project: projectId,
       })
-      .select('_id title status priority');
+      .populate({
+        path: 'assignee',
+        select: '_id firstName lastName profilePhoto',
+      })
+      .select('_id title status priority assignee description');
   }
 }

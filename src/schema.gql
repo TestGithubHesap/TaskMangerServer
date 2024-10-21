@@ -76,6 +76,7 @@ type Project {
   status: ProjectStatus!
   createdAt: String!
   updatedAt: String!
+  tasks: [Task!]!
   taskSummary: TaskSummary!
 }
 
