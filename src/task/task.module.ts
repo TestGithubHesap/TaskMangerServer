@@ -17,5 +17,6 @@ import { Project, ProjectSchema } from 'src/schemas/project.schema';
     ]),
   ],
   providers: [TaskResolver, TaskService],
+  exports: [TaskService],
 })
 export class TaskModule {}

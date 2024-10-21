@@ -172,4 +172,12 @@ export class TaskService {
         select: '_id',
       });
   }
+
+  async getAllTasksByProjectDetail(projectId: string) {
+    return this.taskModel
+      .find({
+        project: projectId,
+      })
+      .select('_id title status priority');
+  }
 }

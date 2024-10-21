@@ -1,4 +1,12 @@
-import { Args, Mutation, Query, Resolver, Subscription } from '@nestjs/graphql';
+import {
+  Args,
+  Mutation,
+  Parent,
+  Query,
+  ResolveField,
+  Resolver,
+  Subscription,
+} from '@nestjs/graphql';
 import { ProjectService } from './project.service';
 import { Project } from 'src/schemas/project.schema';
 import { CreateProjectInput } from './dto/createProjectInput';
@@ -12,12 +20,16 @@ import { UserRole } from 'src/schemas/user.schema';
 import { GraphQLErrorInterceptor } from 'src/common/interceptors/graphql-error.interceptor';
 import { PUB_SUB } from 'src/modules/pubSub.module';
 import { RedisPubSub } from 'graphql-redis-subscriptions';
+import { TaskStatus } from 'src/schemas/task.schema';
+import { TaskSummary } from 'src/types/object-types/TaskSummaryObject';
+import { TaskService } from 'src/task/task.service';
 const CREATE_COMPANY_PROJECT = 'createCompanyProject';
-@Resolver('Project')
+@Resolver(() => Project)
 @UseInterceptors(GraphQLErrorInterceptor)
 export class ProjectResolver {
   constructor(
     private readonly projectService: ProjectService,
+    private readonly taskService: TaskService,
     @Inject(PUB_SUB) private readonly pubSub: RedisPubSub,
   ) {}
   private handleError(
@@ -54,6 +66,45 @@ export class ProjectResolver {
       this.handleError('user not found', HttpStatus.NOT_FOUND);
     }
     return this.projectService.getAllProjectsByCompany(user._id);
+  }
+
+  @UseGuards(AuthGuard)
+  @Roles(UserRole.ADMIN, UserRole.EXECUTIVE)
+  @Query(() => Project)
+  async getProjectWithDetails(@Args('projectId') projectId: string) {
+    return this.projectService.getProject(projectId);
+  }
+  @ResolveField(() => TaskSummary)
+  async taskSummary(@Parent() project: Project) {
+    const tasks = await this.taskService.getAllTasksByProjectDetail(
+      project._id.toString(),
+    );
+    const taskSummary = tasks.reduce(
+      (acc, task) => {
+        acc.totalTasks++;
+        acc[task.status] = (acc[task.status] || 0) + 1;
+        return acc;
+      },
+      {
+        totalTasks: 0,
+        ...Object.values(TaskStatus).reduce(
+          (obj, status) => ({ ...obj, [status]: 0 }),
+          {},
+        ),
+      },
+    );
+    const data = {
+      totalTasks: taskSummary.totalTasks,
+      ...Object.values(TaskStatus).reduce(
+        (obj, status) => ({
+          ...obj,
+          [`${status.toLowerCase()}Tasks`]: taskSummary[status],
+        }),
+        {},
+      ),
+    };
+
+    return data;
   }
   @UseGuards(AuthGuard)
   @Subscription(() => Project, {

@@ -76,6 +76,7 @@ type Project {
   status: ProjectStatus!
   createdAt: String!
   updatedAt: String!
+  taskSummary: TaskSummary!
 }
 
 """Project statuses"""
@@ -119,11 +120,20 @@ enum TaskPriority {
   URGENT
 }
 
+type TaskSummary {
+  totalTasks: Int!
+  todoTasks: Int!
+  in_progressTasks: Int!
+  doneTasks: Int!
+  reviewTasks: Int!
+}
+
 type Query {
   getMe: User!
   rolecheck: String!
   getCompany(companyId: String!): Company!
   getAllProjectsByCompany: [Project!]!
+  getProjectWithDetails(projectId: String!): Project!
   getAllTasksByProject(projectId: String!): [Task!]!
 }
 
