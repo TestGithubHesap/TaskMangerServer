@@ -135,6 +135,7 @@ type Query {
   getCompany(companyId: String!): Company!
   getAllProjectsByCompany: [Project!]!
   getProjectWithDetails(projectId: String!): Project!
+  getTask(taskId: String!): Task!
   getAllTasksByProject(projectId: String!): [Task!]!
   getAllMyTasks: [Task!]!
 }

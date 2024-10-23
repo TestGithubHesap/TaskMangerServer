@@ -182,8 +182,33 @@ export class TaskService {
     return this.taskModel.find().exec();
   }
 
-  async findOne(id: string): Promise<Task> {
-    return this.taskModel.findById(id).exec();
+  async findOneTask(taskId: string): Promise<Task> {
+    return this.taskModel
+      .findById(taskId)
+      .populate([
+        {
+          path: 'parentTask',
+          select: '_id title',
+        },
+        {
+          path: 'subTasks',
+          select: '_id title',
+          model: 'Task',
+        },
+        {
+          path: 'assignee',
+          select: '_id firstName lastName profilePhoto',
+        },
+        {
+          path: 'createdByUser',
+          select: '_id firstName lastName profilePhoto',
+        },
+        {
+          path: 'project',
+          select: '_id name',
+        },
+      ])
+      .lean(); // Bellek kullanımını optimize eder
   }
 
   async getAllTasksByProject(projectId: string) {

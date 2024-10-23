@@ -72,7 +72,11 @@ export class TaskResolver {
       input.status,
     );
   }
-
+  @Query(() => Task)
+  @UseGuards(AuthGuard)
+  async getTask(@Args('taskId') taskId: string): Promise<Task> {
+    return this.taskService.findOneTask(taskId);
+  }
   @Query(() => [Task])
   @UseGuards(AuthGuard)
   async getAllTasksByProject(
