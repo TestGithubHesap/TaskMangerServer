@@ -11,6 +11,7 @@ import { User as AuthUser } from 'src/types/user';
 import { GraphQLError } from 'graphql';
 import { GraphQLErrorInterceptor } from 'src/common/interceptors/graphql-error.interceptor';
 import { UpdateTaskHierarchyInput } from './dto/updateTaskHierarchyInput';
+import { UpdateTaskStatusInput } from './dto/updateTaskStatusInput';
 @Resolver('Task')
 @UseInterceptors(GraphQLErrorInterceptor)
 export class TaskResolver {
@@ -56,11 +57,36 @@ export class TaskResolver {
     );
   }
 
+  @Mutation(() => String)
+  @UseGuards(AuthGuard)
+  async updateTaskStatus(
+    @Args('input') input: UpdateTaskStatusInput,
+    @CurrentUser() user: AuthUser,
+  ): Promise<String> {
+    if (!user) {
+      this.handleError('user not found', HttpStatus.NOT_FOUND);
+    }
+    return this.taskService.updateTaskUpdate(
+      user._id,
+      input.taskId,
+      input.status,
+    );
+  }
+
   @Query(() => [Task])
   @UseGuards(AuthGuard)
   async getAllTasksByProject(
     @Args('projectId') projectId: string,
   ): Promise<Task[]> {
     return this.taskService.getAllTasksByProject(projectId);
+  }
+
+  @Query(() => [Task])
+  @UseGuards(AuthGuard)
+  async getAllMyTasks(@CurrentUser() user: AuthUser): Promise<Task[]> {
+    if (!user) {
+      this.handleError('user not found', HttpStatus.NOT_FOUND);
+    }
+    return this.taskService.getAllMyTasks(user._id);
   }
 }

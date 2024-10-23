@@ -96,7 +96,7 @@ type Task {
   assignee: User!
   parentTask: Task
   createdByUser: User!
-  subTasks: [Task!]!
+  subTasks: [Task!]
   status: TaskStatus!
   priority: TaskPriority!
   dueDate: String!
@@ -136,6 +136,7 @@ type Query {
   getAllProjectsByCompany: [Project!]!
   getProjectWithDetails(projectId: String!): Project!
   getAllTasksByProject(projectId: String!): [Task!]!
+  getAllMyTasks: [Task!]!
 }
 
 type Mutation {
@@ -152,6 +153,7 @@ type Mutation {
   createProject(input: CreateProjectInput!): Project!
   createTask(input: CreateTaskInput!): Task!
   updateTaskHierarchy(input: UpdateTaskHierarchyInput!): Task!
+  updateTaskStatus(input: UpdateTaskStatusInput!): String!
 }
 
 input RegisterUserInput {
@@ -220,6 +222,11 @@ input CreateTaskInput {
 input UpdateTaskHierarchyInput {
   taskId: ID!
   parentTaskId: ID!
+}
+
+input UpdateTaskStatusInput {
+  taskId: ID!
+  status: TaskStatus!
 }
 
 type Subscription {

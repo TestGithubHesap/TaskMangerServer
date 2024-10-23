@@ -2,7 +2,7 @@
 import { Injectable, BadRequestException, HttpStatus } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { Task, TaskDocument } from 'src/schemas/task.schema';
+import { Task, TaskDocument, TaskStatus } from 'src/schemas/task.schema';
 import { CreateTaskInput } from './dto/createTaskInput';
 import { GraphQLError } from 'graphql';
 import { Project, ProjectDocument } from 'src/schemas/project.schema';
@@ -135,6 +135,30 @@ export class TaskService {
     }
   }
 
+  async updateTaskUpdate(userId: string, taskId: string, status: TaskStatus) {
+    try {
+      // Görevi bul
+      const task = await this.taskModel.findOne({
+        _id: taskId,
+        assignee: userId,
+      });
+      if (!task) {
+        this.handleError('Task not found', HttpStatus.NOT_FOUND);
+      }
+
+      task.status = status;
+
+      task.save();
+      return 'Task update success';
+    } catch (error) {
+      this.handleError(
+        'fail updateTaskHierarchy',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
+    }
+  }
+
   private async isCircularDependency(
     taskId: string,
     newParentId: string,
@@ -183,5 +207,21 @@ export class TaskService {
         select: '_id firstName lastName profilePhoto',
       })
       .select('_id title status priority assignee description');
+  }
+
+  async getAllMyTasks(userId) {
+    return this.taskModel
+      .find({
+        assignee: userId,
+      })
+      .populate({
+        path: 'parentTask',
+        select: '_id title',
+      })
+      .populate({
+        path: 'subTasks',
+        select: '_id title',
+        model: 'Task',
+      });
   }
 }

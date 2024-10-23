@@ -79,7 +79,7 @@ export class ProjectResolver {
     const tasks = await this.taskService.getAllTasksByProjectDetail(
       project._id.toString(),
     );
-    console.log('hello');
+  
 
     return tasks;
   }

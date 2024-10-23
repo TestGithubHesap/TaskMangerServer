@@ -62,8 +62,8 @@ export class Task {
   createdByUser: Types.ObjectId;
 
   @Prop({ type: [{ type: Types.ObjectId, ref: 'Task' }] })
-  @Field(() => [Task])
-  subTasks: Types.ObjectId[];
+  @Field(() => [Task], { nullable: true })
+  subTasks?: Types.ObjectId[];
 
   @Prop({ type: String, enum: TaskStatus, default: TaskStatus.TODO })
   @Field(() => TaskStatus)
