@@ -132,6 +132,7 @@ type TaskSummary {
 type Query {
   getMe: User!
   rolecheck: String!
+  getCompanyUsers: [User!]!
   getCompany(companyId: String!): Company!
   getAllProjectsByCompany: [Project!]!
   getProjectWithDetails(projectId: String!): Project!

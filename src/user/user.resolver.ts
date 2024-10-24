@@ -42,4 +42,14 @@ export class UserResolver {
       );
     }
   }
+
+  @Query(() => [User])
+  @UseGuards(AuthGuard)
+  async getCompanyUsers(@CurrentUser() user: AuthUser): Promise<User[]> {
+    if (!user) {
+      this.handleError('user not found', HttpStatus.NOT_FOUND);
+    }
+
+    return this.userService.getCompanyUsers(user._id);
+  }
 }

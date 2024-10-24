@@ -48,4 +48,19 @@ export class UserService {
       );
     }
   }
+
+  async getCompanyUsers(userId: string) {
+    const user = await this.userModel.findById(userId);
+    if (!user) {
+      this.handleError(
+        `User with ID ${userId} not found`,
+        HttpStatus.NOT_FOUND,
+      );
+    }
+    return await this.userModel
+      .find({
+        company: user.company,
+      })
+      .select('_id firstName lastName roles');
+  }
 }
