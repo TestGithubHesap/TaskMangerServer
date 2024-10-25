@@ -155,6 +155,7 @@ type Mutation {
   createProject(input: CreateProjectInput!): Project!
   createTask(input: CreateTaskInput!): Task!
   updateTaskHierarchy(input: UpdateTaskHierarchyInput!): Task!
+  removeParentTask(taskId: String!): String!
   updateTaskStatus(input: UpdateTaskStatusInput!): String!
 }
 

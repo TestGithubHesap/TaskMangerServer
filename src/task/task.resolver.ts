@@ -12,6 +12,7 @@ import { GraphQLError } from 'graphql';
 import { GraphQLErrorInterceptor } from 'src/common/interceptors/graphql-error.interceptor';
 import { UpdateTaskHierarchyInput } from './dto/updateTaskHierarchyInput';
 import { UpdateTaskStatusInput } from './dto/updateTaskStatusInput';
+import { RolesGuard } from 'src/common/guards/role.guard';
 @Resolver('Task')
 @UseInterceptors(GraphQLErrorInterceptor)
 export class TaskResolver {
@@ -28,7 +29,8 @@ export class TaskResolver {
       },
     });
   }
-  @UseGuards(AuthGuard)
+
+  @UseGuards(AuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.EXECUTIVE)
   @Mutation(() => Task)
   async createTask(
@@ -42,7 +44,8 @@ export class TaskResolver {
   }
 
   @Mutation(() => Task)
-  @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.EXECUTIVE)
   async updateTaskHierarchy(
     @Args('input') input: UpdateTaskHierarchyInput,
     @CurrentUser() user: AuthUser,
@@ -56,7 +59,18 @@ export class TaskResolver {
       input.parentTaskId,
     );
   }
-
+  @Mutation(() => String)
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.EXECUTIVE)
+  async removeParentTask(
+    @Args('taskId') taskId: string,
+    @CurrentUser() user: AuthUser,
+  ): Promise<String> {
+    if (!user) {
+      this.handleError('user not found', HttpStatus.NOT_FOUND);
+    }
+    return this.taskService.removeParentTask(user._id, taskId);
+  }
   @Mutation(() => String)
   @UseGuards(AuthGuard)
   async updateTaskStatus(

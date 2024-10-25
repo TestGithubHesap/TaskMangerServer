@@ -107,14 +107,13 @@ export class TaskService {
       // Eğer görevin zaten bir üst görevi varsa, eski üst görevden çıkar
       if (task.parentTask) {
         await this.taskModel.findByIdAndUpdate(task.parentTask, {
-          $pull: { subTasks: task._id },
+          $pull: { subTasks: taskId },
         });
       }
 
       // Görevi güncelle
       await this.taskModel.findByIdAndUpdate(taskId, {
         $set: { parentTask: parentTaskId },
-        $addToSet: { ancestors: parentTaskId }, // ancestors dizisine parentTaskId'yi ekle
       });
 
       // Üst görevi güncelle
@@ -129,6 +128,45 @@ export class TaskService {
     } catch (error) {
       this.handleError(
         'fail updateTaskHierarchy',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
+    }
+  }
+
+  async removeParentTask(userId: string, taskId: string) {
+    try {
+      const task = await this.taskModel.findById(taskId).populate('parentTask');
+      if (!task) {
+        this.handleError('Task  not found', HttpStatus.NOT_FOUND);
+      }
+      const parentTask = await this.taskModel
+        .findById(task.parentTask._id)
+        .populate({
+          path: 'project',
+          select: '_id projectManager',
+        });
+      if (parentTask.project.projectManager.toString() !== userId) {
+        this.handleError(
+          'Unauthorized: Only the project manager can update the task hierarchy',
+          HttpStatus.FORBIDDEN,
+        );
+      }
+
+      const removetasss = await this.taskModel.findByIdAndUpdate(
+        parentTask._id,
+        {
+          $pull: { subTasks: taskId },
+        },
+      );
+      console.log(taskId, removetasss);
+      await this.taskModel.findByIdAndUpdate(taskId, {
+        $set: { parentTask: null },
+      });
+      return 'Success remove parent task';
+    } catch (error) {
+      this.handleError(
+        'fail removeParentTask',
         HttpStatus.INTERNAL_SERVER_ERROR,
         error,
       );
