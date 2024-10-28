@@ -47,6 +47,11 @@ type LoginUserObject {
   refresh_token: String!
 }
 
+type ChangeUserStatusObject {
+  userId: ID!
+  status: String!
+}
+
 type CompanyJoinRequest {
   _id: ID!
   user: User!
@@ -214,6 +219,7 @@ type Mutation {
   forgotPassword(email: String!): String!
   resetPassword(input: ResetPasswordInput!): String!
   updateUser(input: UpdateUserInput!): User!
+  updateUserStatus(status: String!): Boolean!
   createCompany(input: CreateCompanyInput!): Company!
   requestToJoinCompany(companyId: String!): CompanyJoinRequest!
   respondToJoinRequest(requestId: String!, approve: Boolean!): CompanyJoinRequest!
@@ -319,6 +325,7 @@ input MediaContentInput {
 }
 
 type Subscription {
+  changeUserStatus(userId: String!): ChangeUserStatusObject!
   createCompanyProject(companyId: String!): Project!
   addMessageToChat(chatId: String!): Message!
 }

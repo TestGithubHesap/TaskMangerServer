@@ -1,13 +1,18 @@
-import { HttpStatus, Injectable } from '@nestjs/common';
+import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User, UserDocument } from 'src/schemas/user.schema';
 import { UpdateUserInput } from './dto/updateUserInput';
 import { GraphQLError } from 'graphql';
+import { PUB_SUB } from 'src/modules/pubSub.module';
+import { RedisPubSub } from 'graphql-redis-subscriptions';
 
 @Injectable()
 export class UserService {
-  constructor(@InjectModel(User.name) private userModel: Model<UserDocument>) {}
+  constructor(
+    @InjectModel(User.name) private userModel: Model<UserDocument>,
+    @Inject(PUB_SUB) private readonly pubSub: RedisPubSub,
+  ) {}
   private handleError(
     message: string,
     statusCode: HttpStatus,
@@ -62,5 +67,41 @@ export class UserService {
         company: user.company,
       })
       .select('_id firstName lastName roles');
+  }
+
+  async updateUserStatus(userId: string, newStatus: string) {
+    try {
+      const currentUser = await this.userModel.findById(userId);
+
+      if (!currentUser) {
+        this.handleError('User not found', HttpStatus.NOT_FOUND);
+      }
+
+      if (currentUser.status === newStatus) {
+        return true;
+      }
+
+      await this.userModel.findByIdAndUpdate(
+        {
+          _id: userId,
+        },
+        { status: newStatus },
+      );
+
+      this.pubSub.publish('changeUserStatus', {
+        changeUserStatus: {
+          userId,
+          status: newStatus,
+        },
+      });
+
+      return true;
+    } catch (error) {
+      this.handleError(
+        'Update user status failed',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
+    }
   }
 }

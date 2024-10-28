@@ -1,17 +1,24 @@
-import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
+import { Args, Mutation, Query, Resolver, Subscription } from '@nestjs/graphql';
 import { UserService } from './user.service';
 import { User, UserRole } from 'src/schemas/user.schema';
 import { UpdateUserInput } from './dto/updateUserInput';
 import { GraphQLErrorInterceptor } from 'src/common/interceptors/graphql-error.interceptor';
-import { HttpStatus, UseGuards, UseInterceptors } from '@nestjs/common';
+import { HttpStatus, Inject, UseGuards, UseInterceptors } from '@nestjs/common';
 import { CurrentUser } from 'src/common/decorators/user.decorator';
 import { User as AuthUser } from 'src/types/user';
 import { AuthGuard } from 'src/common/guards/auth.guard';
 import { GraphQLError } from 'graphql';
+import { ChangeUserStatusObject } from 'src/types/object-types/ChangeUserStatusObject';
+import { PUB_SUB } from 'src/modules/pubSub.module';
+import { RedisPubSub } from 'graphql-redis-subscriptions';
+const CHANGE_USER_STATUS = 'changeUserStatus';
 @Resolver('User')
 @UseInterceptors(GraphQLErrorInterceptor)
 export class UserResolver {
-  constructor(private readonly userService: UserService) {}
+  constructor(
+    private readonly userService: UserService,
+    @Inject(PUB_SUB) private readonly pubSub: RedisPubSub,
+  ) {}
   private handleError(
     message: string,
     statusCode: HttpStatus,
@@ -51,5 +58,33 @@ export class UserResolver {
     }
 
     return this.userService.getCompanyUsers(user._id);
+  }
+
+  @Mutation(() => Boolean)
+  @UseGuards(AuthGuard)
+  async updateUserStatus(
+    @Args('status') status: string,
+    @CurrentUser() user: AuthUser,
+  ): Promise<boolean> {
+    if (!user) {
+      this.handleError('user not found', HttpStatus.NOT_FOUND);
+    }
+
+    return await this.userService.updateUserStatus(user._id, status);
+  }
+
+  @UseGuards(AuthGuard)
+  @Subscription(() => ChangeUserStatusObject, {
+    filter: async function (payload, variables, context) {
+      const { req, res } = context;
+      if (!req?.user) {
+        this.handleError('user not found', HttpStatus.NOT_FOUND);
+      }
+
+      return payload.changeUserStatus.userId == variables.userId;
+    },
+  })
+  changeUserStatus(@Args('userId') userId: string) {
+    return this.pubSub.asyncIterator(CHANGE_USER_STATUS);
   }
 }
