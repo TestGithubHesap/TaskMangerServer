@@ -132,4 +132,7 @@ export class ChatService {
       //   participants.length === 2 ? MetadataType.DIRECT : MetadataType.GROUP,
     });
   }
+
+
+  
 }

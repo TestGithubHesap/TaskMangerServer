@@ -134,16 +134,33 @@ type GetAllTasksByProjectObject {
   project: Project!
 }
 
+type MediaContent {
+  url: String!
+  thumbnail: String
+  duration: Float
+  size: Float
+  mimeType: String
+}
+
 type Message {
   _id: ID!
   sender: User!
   chat: Chat!
-  content: String!
+  type: MessageType!
+  content: String
+  mediaContent: MediaContent
   isRead: [User!]!
   createdAt: String!
   updatedAt: String!
   isDeleted: Boolean!
   deletedAt: String
+}
+
+"""Mesaj içerik tipleri"""
+enum MessageType {
+  TEXT
+  IMAGE
+  VIDEO
 }
 
 type ChatMetadata {
@@ -206,6 +223,7 @@ type Mutation {
   removeParentTask(taskId: String!): String!
   updateTaskStatus(input: UpdateTaskStatusInput!): String!
   createChat(input: CreateChatInput!): Chat!
+  addMessageToChat(input: CreateMessageInput!): Message!
 }
 
 input RegisterUserInput {
@@ -283,6 +301,21 @@ input UpdateTaskStatusInput {
 
 input CreateChatInput {
   participants: [String!]!
+}
+
+input CreateMessageInput {
+  chatId: String!
+  type: MessageType!
+  content: String
+  mediaContent: MediaContentInput
+}
+
+input MediaContentInput {
+  url: String!
+  thumbnail: String
+  duration: Float
+  size: Float
+  mimeType: String
 }
 
 type Subscription {

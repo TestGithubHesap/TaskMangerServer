@@ -1,11 +1,45 @@
-import { Field, ID, ObjectType } from '@nestjs/graphql';
+import { Field, ID, ObjectType, registerEnumType } from '@nestjs/graphql';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 import { User } from './user.schema';
 import { Chat } from './chat.schema';
 
 export type MessageDocument = Message & Document;
+export enum MessageType {
+  TEXT = 'TEXT',
+  IMAGE = 'IMAGE',
+  VIDEO = 'VIDEO',
+}
 
+// Enum'u GraphQL şemasına kaydet
+registerEnumType(MessageType, {
+  name: 'MessageType',
+  description: 'Mesaj içerik tipleri',
+});
+
+// Medya içeriği için interface
+@ObjectType()
+class MediaContent {
+  @Field()
+  @Prop()
+  url: string;
+
+  @Field({ nullable: true })
+  @Prop()
+  thumbnail?: string;
+
+  @Field({ nullable: true })
+  @Prop()
+  duration?: number;
+
+  @Field({ nullable: true })
+  @Prop()
+  size?: number;
+
+  @Field({ nullable: true })
+  @Prop()
+  mimeType?: string;
+}
 @Schema({ timestamps: true })
 @ObjectType()
 export class Message {
@@ -20,9 +54,17 @@ export class Message {
   @Field(() => Chat)
   chat: Types.ObjectId;
 
-  @Prop({ required: true })
-  @Field()
-  content: string;
+  @Prop({ type: String, enum: MessageType, required: true })
+  @Field(() => MessageType)
+  type: MessageType;
+
+  @Prop({ required: false })
+  @Field({ nullable: true })
+  content?: string;
+
+  @Prop({ type: MediaContent, required: false })
+  @Field(() => MediaContent, { nullable: true })
+  mediaContent?: MediaContent;
 
   @Prop({ type: [{ type: Types.ObjectId, ref: 'User' }] })
   @Field(() => [User])
