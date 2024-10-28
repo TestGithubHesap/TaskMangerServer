@@ -59,7 +59,8 @@ export class AuthResolver {
 
   @Query(() => User)
   @UseGuards(AuthGuard)
-  async getMe(@Context() context, @CurrentUser() user: AuthUser) {
+  async getMe(@CurrentUser() user: AuthUser) {
+    console.log("hell")
     if (!user) {
       this.handleError('user not found', HttpStatus.NOT_FOUND);
     }

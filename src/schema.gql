@@ -320,4 +320,5 @@ input MediaContentInput {
 
 type Subscription {
   createCompanyProject(companyId: String!): Project!
+  addMessageToChat(chatId: String!): Message!
 }

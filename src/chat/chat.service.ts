@@ -76,6 +76,13 @@ export class ChatService {
       );
     }
   }
+  async findById(chatId: string): Promise<Chat> {
+    const chat = await this.chatModel.findById(chatId);
+    if (!chat) {
+      this.handleError('Chat not found', HttpStatus.NOT_FOUND);
+    }
+    return chat;
+  }
 
   private async validateChatCreation(
     userId: string,
@@ -132,7 +139,4 @@ export class ChatService {
       //   participants.length === 2 ? MetadataType.DIRECT : MetadataType.GROUP,
     });
   }
-
-
-  
 }

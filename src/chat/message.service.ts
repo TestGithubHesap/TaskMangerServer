@@ -1,4 +1,4 @@
-import { HttpStatus, Injectable } from '@nestjs/common';
+import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { GraphQLError } from 'graphql';
 import { Model, Types } from 'mongoose';
@@ -10,6 +10,8 @@ import {
 } from 'src/schemas/message.schema';
 import { User, UserDocument } from 'src/schemas/user.schema';
 import { CreateMessageInput } from './dto/CreateMessageInput';
+import { PUB_SUB } from 'src/modules/pubSub.module';
+import { RedisPubSub } from 'graphql-redis-subscriptions';
 
 @Injectable()
 export class MessageService {
@@ -17,6 +19,7 @@ export class MessageService {
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectModel(Chat.name) private chatModel: Model<ChatDocument>,
     @InjectModel(Message.name) private messageModel: Model<MessageDocument>,
+    @Inject(PUB_SUB) private readonly pubSub: RedisPubSub,
   ) {}
   private handleError(
     message: string,
@@ -60,6 +63,20 @@ export class MessageService {
 
       await this.chatModel.findByIdAndUpdate(chat._id, {
         $push: { messages: newMessage._id },
+      });
+
+      this.pubSub.publish('addMessageToChat', {
+        addMessageToChat: {
+          _id: newMessage._id,
+          content: newMessage.content,
+          mediaContent: newMessage.mediaContent,
+          chatId: chat._id,
+          sender: {
+            _id: user._id,
+            userName: user.userName,
+            profilePhoto: user.profilePhoto,
+          },
+        },
       });
 
       return newMessage;
