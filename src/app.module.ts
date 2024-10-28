@@ -14,6 +14,7 @@ import { parseCookies } from './utils/parseCookies';
 import { CompanyModule } from './company/company.module';
 import { ProjectModule } from './project/project.module';
 import { TaskModule } from './task/task.module';
+import { ChatModule } from './chat/chat.module';
 
 @Module({
   imports: [
@@ -59,6 +60,7 @@ import { TaskModule } from './task/task.module';
     CompanyModule,
     ProjectModule,
     TaskModule,
+    ChatModule,
   ],
   controllers: [AppController],
   providers: [AppService],

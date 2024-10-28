@@ -23,6 +23,7 @@ import { RedisPubSub } from 'graphql-redis-subscriptions';
 import { Task, TaskStatus } from 'src/schemas/task.schema';
 import { TaskSummary } from 'src/types/object-types/TaskSummaryObject';
 import { TaskService } from 'src/task/task.service';
+import { RolesGuard } from 'src/common/guards/role.guard';
 const CREATE_COMPANY_PROJECT = 'createCompanyProject';
 @Resolver(() => Project)
 @UseInterceptors(GraphQLErrorInterceptor)
@@ -56,8 +57,8 @@ export class ProjectResolver {
     }
     return this.projectService.createProject(user._id, input);
   }
-  @UseGuards(AuthGuard)
-  @Roles(UserRole.ADMIN, UserRole.EXECUTIVE)
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.EXECUTIVE, UserRole.WORKER)
   @Query(() => [Project])
   async getAllProjectsByCompany(
     @CurrentUser() user: AuthUser,
@@ -66,6 +67,18 @@ export class ProjectResolver {
       this.handleError('user not found', HttpStatus.NOT_FOUND);
     }
     return this.projectService.getAllProjectsByCompany(user._id);
+  }
+
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.EXECUTIVE)
+  @Query(() => [Project])
+  async getProjectsByCompany(
+    @CurrentUser() user: AuthUser,
+  ): Promise<Project[]> {
+    if (!user) {
+      this.handleError('user not found', HttpStatus.NOT_FOUND);
+    }
+    return this.projectService.getProjectsByCompany(user._id);
   }
 
   @UseGuards(AuthGuard)
@@ -79,7 +92,6 @@ export class ProjectResolver {
     const tasks = await this.taskService.getAllTasksByProjectDetail(
       project._id.toString(),
     );
-  
 
     return tasks;
   }

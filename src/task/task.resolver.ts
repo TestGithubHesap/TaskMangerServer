@@ -13,6 +13,8 @@ import { GraphQLErrorInterceptor } from 'src/common/interceptors/graphql-error.i
 import { UpdateTaskHierarchyInput } from './dto/updateTaskHierarchyInput';
 import { UpdateTaskStatusInput } from './dto/updateTaskStatusInput';
 import { RolesGuard } from 'src/common/guards/role.guard';
+import { Project } from 'src/schemas/project.schema';
+import { GetAllTasksByProjectObject } from 'src/types/object-types/GetAllTasksByProjectObject';
 @Resolver('Task')
 @UseInterceptors(GraphQLErrorInterceptor)
 export class TaskResolver {
@@ -91,11 +93,12 @@ export class TaskResolver {
   async getTask(@Args('taskId') taskId: string): Promise<Task> {
     return this.taskService.findOneTask(taskId);
   }
-  @Query(() => [Task])
+  @Query(() => GetAllTasksByProjectObject)
   @UseGuards(AuthGuard)
-  async getAllTasksByProject(
-    @Args('projectId') projectId: string,
-  ): Promise<Task[]> {
+  async getAllTasksByProject(@Args('projectId') projectId: string): Promise<{
+    tasks: Task[];
+    project: Project;
+  }> {
     return this.taskService.getAllTasksByProject(projectId);
   }
 

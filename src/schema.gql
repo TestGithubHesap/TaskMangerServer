@@ -129,15 +129,63 @@ type TaskSummary {
   reviewTasks: Int!
 }
 
+type GetAllTasksByProjectObject {
+  tasks: [Task!]!
+  project: Project!
+}
+
+type Message {
+  _id: ID!
+  sender: User!
+  chat: Chat!
+  content: String!
+  isRead: [User!]!
+  createdAt: String!
+  updatedAt: String!
+  isDeleted: Boolean!
+  deletedAt: String
+}
+
+type ChatMetadata {
+  createdAt: DateTime!
+  lastActivity: DateTime!
+  participantCount: Float!
+  type: MetadataType!
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+"""Chat Metadata Type"""
+enum MetadataType {
+  DIRECT
+  GROUP
+}
+
+type Chat {
+  _id: ID!
+  participants: [User!]!
+  messages: [Message!]!
+  isDeleted: Boolean!
+  createdByUser: User!
+  deletedAt: String
+  metadata: ChatMetadata!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
 type Query {
   getMe: User!
   rolecheck: String!
   getCompanyUsers: [User!]!
   getCompany(companyId: String!): Company!
   getAllProjectsByCompany: [Project!]!
+  getProjectsByCompany: [Project!]!
   getProjectWithDetails(projectId: String!): Project!
   getTask(taskId: String!): Task!
-  getAllTasksByProject(projectId: String!): [Task!]!
+  getAllTasksByProject(projectId: String!): GetAllTasksByProjectObject!
   getAllMyTasks: [Task!]!
 }
 
@@ -157,6 +205,7 @@ type Mutation {
   updateTaskHierarchy(input: UpdateTaskHierarchyInput!): Task!
   removeParentTask(taskId: String!): String!
   updateTaskStatus(input: UpdateTaskStatusInput!): String!
+  createChat(input: CreateChatInput!): Chat!
 }
 
 input RegisterUserInput {
@@ -230,6 +279,10 @@ input UpdateTaskHierarchyInput {
 input UpdateTaskStatusInput {
   taskId: ID!
   status: TaskStatus!
+}
+
+input CreateChatInput {
+  participants: [String!]!
 }
 
 type Subscription {

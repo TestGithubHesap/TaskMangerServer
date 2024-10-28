@@ -249,15 +249,28 @@ export class TaskService {
       .lean(); // Bellek kullanımını optimize eder
   }
 
-  async getAllTasksByProject(projectId: string) {
-    return this.taskModel
-      .find({
-        project: projectId,
-      })
-      .populate({
-        path: 'parentTask',
+  async getAllTasksByProject(projectId: string): Promise<{
+    tasks: Task[];
+    project: Project;
+  }> {
+    const [project, tasks] = await Promise.all([
+      this.projectModel.findById(projectId).populate({
+        path: 'projectManager',
         select: '_id',
-      });
+      }),
+      this.taskModel
+        .find({
+          project: projectId,
+        })
+        .populate({
+          path: 'parentTask',
+          select: '_id',
+        }),
+    ]);
+    return {
+      project,
+      tasks,
+    };
   }
 
   async getAllTasksByProjectDetail(projectId: string) {

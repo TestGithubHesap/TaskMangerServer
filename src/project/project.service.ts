@@ -95,7 +95,25 @@ export class ProjectService {
       company: user.company,
     });
   }
+  async getProjectsByCompany(userId: string): Promise<Project[]> {
+    const user = await this.userModel.findById(userId);
 
+    if (!user) {
+      this.handleError(
+        'You are not authorized to view projects',
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+    if (user.roles.includes(UserRole.ADMIN)) {
+      return this.projectModel.find({
+        company: user.company,
+      });
+    }
+    return this.projectModel.find({
+      company: user.company,
+      projectManager: user._id.toString(),
+    });
+  }
   async getProject(projectId: string) {
     const project = await this.projectModel
       .findById(projectId)
