@@ -36,6 +36,19 @@ export class ChatService {
         ...new Set([...participants, userId]),
       ].map((id) => new Types.ObjectId(id));
 
+      const existingChat = await this.findExistingChat(
+        uniqueParticipantsObjectId,
+      );
+      if (existingChat) {
+        // Eğer sohbet silinmişse, aktif hale getir
+        if (existingChat.isDeleted) {
+          existingChat.isDeleted = false;
+          existingChat.deletedAt = null;
+          await existingChat.save();
+        }
+        return existingChat;
+      }
+
       // Yeni sohbet oluştur
       const chatType =
         uniqueParticipantsObjectId.length <= 2
@@ -104,5 +117,19 @@ export class ChatService {
     if (users.length !== uniqueParticipants.length) {
       this.handleError('Some users were not found', HttpStatus.BAD_REQUEST);
     }
+  }
+
+  private async findExistingChat(
+    participants: Types.ObjectId[],
+  ): Promise<ChatDocument | null> {
+    // Aynı katılımcılara sahip aktif bir sohbet var mı kontrol et
+    return await this.chatModel.findOne({
+      participants: {
+        $all: participants,
+        $size: participants.length,
+      },
+      // 'metadata.type':
+      //   participants.length === 2 ? MetadataType.DIRECT : MetadataType.GROUP,
+    });
   }
 }
