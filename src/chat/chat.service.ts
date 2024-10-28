@@ -3,7 +3,11 @@ import { InjectModel } from '@nestjs/mongoose';
 import { GraphQLError } from 'graphql';
 import { Model, Types } from 'mongoose';
 import { Chat, ChatDocument, MetadataType } from 'src/schemas/chat.schema';
-import { Message, MessageDocument } from 'src/schemas/message.schema';
+import {
+  Message,
+  MessageDocument,
+  MessageType,
+} from 'src/schemas/message.schema';
 import { User, UserDocument } from 'src/schemas/user.schema';
 
 @Injectable()
@@ -138,5 +142,82 @@ export class ChatService {
       // 'metadata.type':
       //   participants.length === 2 ? MetadataType.DIRECT : MetadataType.GROUP,
     });
+  }
+
+  async getChats(userId: string) {
+    const chats = await this.chatModel.aggregate([
+      {
+        $match: {
+          participants: new Types.ObjectId(userId),
+        },
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'participants',
+          foreignField: '_id',
+          as: 'participants',
+        },
+      },
+      {
+        $lookup: {
+          from: 'messages',
+          localField: 'messages',
+          foreignField: '_id',
+          pipeline: [
+            {
+              $match: {
+                type: MessageType.TEXT,
+              },
+            },
+            { $sort: { createdAt: -1 } },
+            { $limit: 1 },
+            {
+              $lookup: {
+                from: 'users',
+                localField: 'sender',
+                foreignField: '_id',
+                as: 'sender',
+              },
+            },
+            { $unwind: '$sender' },
+            {
+              $project: {
+                content: 1,
+                createdAt: 1,
+                'mediaContent.url': 1,
+                'sender._id': 1,
+              },
+            },
+          ],
+          as: 'lastMessage',
+        },
+      },
+      {
+        $project: {
+          participants: {
+            $filter: {
+              input: '$participants',
+              as: 'participant',
+              cond: {
+                $ne: ['$$participant._id', new Types.ObjectId(userId)],
+              },
+            },
+          },
+          lastMessage: { $arrayElemAt: ['$lastMessage', 0] },
+        },
+      },
+      {
+        $project: {
+          'participants._id': 1,
+          'participants.status': 1,
+          'participants.userName': 1,
+          'participants.profilePhoto': 1,
+          lastMessage: 1,
+        },
+      },
+    ]);
+
+    return chats;
   }
 }

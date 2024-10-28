@@ -198,6 +198,12 @@ type Chat {
   updatedAt: DateTime!
 }
 
+type GetUserChatsObject {
+  _id: ID!
+  participants: [User!]!
+  lastMessage: Message
+}
+
 type Query {
   getMe: User!
   rolecheck: String!
@@ -209,6 +215,7 @@ type Query {
   getTask(taskId: String!): Task!
   getAllTasksByProject(projectId: String!): GetAllTasksByProjectObject!
   getAllMyTasks: [Task!]!
+  getChats: [GetUserChatsObject!]!
 }
 
 type Mutation {

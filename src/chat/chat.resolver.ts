@@ -1,4 +1,4 @@
-import { Args, Mutation, Resolver, Subscription } from '@nestjs/graphql';
+import { Args, Mutation, Query, Resolver, Subscription } from '@nestjs/graphql';
 import { ChatService } from './chat.service';
 import { Chat } from 'src/schemas/chat.schema';
 import { HttpStatus, Inject, UseGuards, UseInterceptors } from '@nestjs/common';
@@ -14,6 +14,8 @@ import { CreateChatInput } from './dto/CreateChatInput';
 import { Message } from 'src/schemas/message.schema';
 import { PUB_SUB } from 'src/modules/pubSub.module';
 import { RedisPubSub } from 'graphql-redis-subscriptions';
+import { Types } from 'mongoose';
+import { GetUserChatsObject } from 'src/types/object-types/GetUserChatsObject';
 
 const ADD_MESSAGE = 'addMessageToChat';
 
@@ -78,5 +80,11 @@ export class ChatResolver {
       );
     }
     return this.pubSub.asyncIterator(ADD_MESSAGE);
+  }
+
+  @Query(() => [GetUserChatsObject])
+  @UseGuards(AuthGuard)
+  async getChats(@CurrentUser() user: AuthUser) {
+    return this.chatService.getChats(user._id);
   }
 }
