@@ -16,6 +16,9 @@ import { PUB_SUB } from 'src/modules/pubSub.module';
 import { RedisPubSub } from 'graphql-redis-subscriptions';
 import { Types } from 'mongoose';
 import { GetUserChatsObject } from 'src/types/object-types/GetUserChatsObject';
+import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
+import { SignUrlOutput } from 'src/types/object-types/SignUrlObject';
+import { SignUrlInput } from './dto/SignUrlInput';
 
 const ADD_MESSAGE = 'addMessageToChat';
 
@@ -24,6 +27,7 @@ const ADD_MESSAGE = 'addMessageToChat';
 export class ChatResolver {
   constructor(
     private readonly chatService: ChatService,
+    private readonly cloudinaryService: CloudinaryService,
     @Inject(PUB_SUB) private readonly pubSub: RedisPubSub,
   ) {}
   private handleError(
@@ -86,5 +90,22 @@ export class ChatResolver {
   @UseGuards(AuthGuard)
   async getChats(@CurrentUser() user: AuthUser) {
     return this.chatService.getChats(user._id);
+  }
+  @Mutation(() => SignUrlOutput)
+  @UseGuards(AuthGuard)
+  async generateSignedUploadUrl(
+    @Args('input') input: SignUrlInput,
+  ): Promise<SignUrlOutput> {
+    const { signature, timestamp } =
+      await this.cloudinaryService.generateSignature(
+        input.publicId,
+        input.folder,
+      );
+    return {
+      signature,
+      timestamp,
+      cloudName: process.env.CLD_CLOUD_NAME,
+      apiKey: process.env.CLD_API_KEY,
+    };
   }
 }

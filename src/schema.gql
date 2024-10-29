@@ -216,6 +216,13 @@ type GetUserChatsObject {
   lastMessage: Message
 }
 
+type SignUrlOutput {
+  signature: String!
+  timestamp: Float!
+  cloudName: String!
+  apiKey: String!
+}
+
 type GetChatMessagesObject {
   messages: [Message!]!
   totalMessages: Float!
@@ -263,6 +270,7 @@ type Mutation {
   removeParentTask(taskId: String!): String!
   updateTaskStatus(input: UpdateTaskStatusInput!): String!
   createChat(input: CreateChatInput!): Chat!
+  generateSignedUploadUrl(input: SignUrlInput!): SignUrlOutput!
   addMessageToChat(input: CreateMessageInput!): Message!
 }
 
@@ -341,6 +349,11 @@ input UpdateTaskStatusInput {
 
 input CreateChatInput {
   participants: [String!]!
+}
+
+input SignUrlInput {
+  publicId: String!
+  folder: String!
 }
 
 input CreateMessageInput {

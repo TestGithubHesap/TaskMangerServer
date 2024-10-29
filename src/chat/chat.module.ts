@@ -8,11 +8,16 @@ import { Message, MessageSchema } from 'src/schemas/message.schema';
 import { AuthModule } from 'src/auth/auth.module';
 import { MessageService } from './message.service';
 import { MessageResolver } from './message.resolver';
-import { MediaContent, MediaContentSchema } from 'src/schemas/mediaContent.schema';
+import {
+  MediaContent,
+  MediaContentSchema,
+} from 'src/schemas/mediaContent.schema';
+import { CloudinaryModule } from 'src/cloudinary/cloudinary.module';
 
 @Module({
   imports: [
     AuthModule,
+    CloudinaryModule,
     MongooseModule.forFeature([
       { name: User.name, schema: UserSchema },
       { name: Chat.name, schema: ChatSchema },
