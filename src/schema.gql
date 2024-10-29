@@ -140,11 +140,24 @@ type GetAllTasksByProjectObject {
 }
 
 type MediaContent {
+  _id: ID!
+  type: MediaType!
   url: String!
   thumbnail: String
   duration: Float
   size: Float
   mimeType: String
+  fileName: String
+  createdAt: String!
+  updatedAt: String!
+}
+
+"""Medya dosya tipleri"""
+enum MediaType {
+  IMAGE
+  VIDEO
+  AUDIO
+  DOCUMENT
 }
 
 type Message {
@@ -153,7 +166,7 @@ type Message {
   chat: Chat!
   type: MessageType!
   content: String
-  mediaContent: MediaContent
+  media: MediaContent
   isRead: [User!]!
   createdAt: String!
   updatedAt: String!
@@ -164,8 +177,7 @@ type Message {
 """Mesaj içerik tipleri"""
 enum MessageType {
   TEXT
-  IMAGE
-  VIDEO
+  MEDIA
 }
 
 type ChatMetadata {
@@ -204,6 +216,13 @@ type GetUserChatsObject {
   lastMessage: Message
 }
 
+type GetChatMessagesObject {
+  messages: [Message!]!
+  totalMessages: Float!
+  totalPages: Float!
+  currentPage: Float!
+}
+
 type Query {
   getMe: User!
   rolecheck: String!
@@ -216,6 +235,14 @@ type Query {
   getAllTasksByProject(projectId: String!): GetAllTasksByProjectObject!
   getAllMyTasks: [Task!]!
   getChats: [GetUserChatsObject!]!
+  getChatMessages(input: GetChatMessagesInput!): GetChatMessagesObject!
+}
+
+input GetChatMessagesInput {
+  chatId: String!
+  page: Float!
+  limit: Float!
+  extraPassValue: Float
 }
 
 type Mutation {
@@ -325,6 +352,7 @@ input CreateMessageInput {
 
 input MediaContentInput {
   url: String!
+  type: MediaType!
   thumbnail: String
   duration: Float
   size: Float

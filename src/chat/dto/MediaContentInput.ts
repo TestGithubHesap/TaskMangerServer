@@ -1,5 +1,6 @@
 import { Field, InputType } from '@nestjs/graphql';
-import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { MediaType } from 'src/schemas/mediaContent.schema';
 
 @InputType()
 export class MediaContentInput {
@@ -7,6 +8,10 @@ export class MediaContentInput {
   @IsString()
   @IsNotEmpty()
   url: string;
+
+  @Field(() => MediaType)
+  @IsEnum(MediaType)
+  type: MediaType;
 
   @Field({ nullable: true })
   @IsString()

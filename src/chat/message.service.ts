@@ -12,6 +12,11 @@ import { User, UserDocument } from 'src/schemas/user.schema';
 import { CreateMessageInput } from './dto/CreateMessageInput';
 import { PUB_SUB } from 'src/modules/pubSub.module';
 import { RedisPubSub } from 'graphql-redis-subscriptions';
+import { GetChatMessagesInput } from './dto/GetChatMessagesInput';
+import {
+  MediaContent,
+  MediaContentDocument,
+} from 'src/schemas/mediaContent.schema';
 
 @Injectable()
 export class MessageService {
@@ -19,6 +24,8 @@ export class MessageService {
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectModel(Chat.name) private chatModel: Model<ChatDocument>,
     @InjectModel(Message.name) private messageModel: Model<MessageDocument>,
+    @InjectModel(MediaContent.name)
+    private mediaContentModel: Model<MediaContentDocument>,
     @Inject(PUB_SUB) private readonly pubSub: RedisPubSub,
   ) {}
   private handleError(
@@ -53,30 +60,51 @@ export class MessageService {
           HttpStatus.FORBIDDEN,
         );
       }
+      let mediaId: Types.ObjectId | undefined;
+      if (input.mediaContent) {
+        const newMedia = new this.mediaContentModel({
+          type: input.mediaContent.type,
+          url: input.mediaContent.url,
+          thumbnail: input.mediaContent.thumbnail,
+          duration: input.mediaContent.duration,
+          size: input.mediaContent.size,
+          mimeType: input.mediaContent.mimeType,
+        });
+        const savedMedia = await newMedia.save();
+        mediaId = new Types.ObjectId(savedMedia._id);
+      }
 
       const newMessage = new this.messageModel({
         sender: new Types.ObjectId(userId),
         chat: new Types.ObjectId(input.chatId),
-        ...input,
+        type: input.type,
+        content: input.content,
+        media: mediaId, // Eğer medya varsa ID'sini ekle
+        isRead: [new Types.ObjectId(userId)], // Gönderen otomatik olarak okumuş sayılır
       });
+
       await newMessage.save();
 
       await this.chatModel.findByIdAndUpdate(chat._id, {
         $push: { messages: newMessage._id },
       });
-
-      this.pubSub.publish('addMessageToChat', {
-        addMessageToChat: {
-          _id: newMessage._id,
-          content: newMessage.content,
-          mediaContent: newMessage.mediaContent,
-          chatId: chat._id,
-          sender: {
-            _id: user._id,
-            userName: user.userName,
-            profilePhoto: user.profilePhoto,
-          },
+      const messageForPublish = {
+        _id: newMessage._id,
+        type: newMessage.type,
+        content: newMessage.content,
+        chatId: chat._id,
+        sender: {
+          _id: user._id,
+          userName: user.userName,
+          profilePhoto: user.profilePhoto,
         },
+      };
+      if (mediaId) {
+        const mediaContent = await this.mediaContentModel.findById(mediaId);
+        Object.assign(messageForPublish, { media: mediaContent });
+      }
+      this.pubSub.publish('addMessageToChat', {
+        addMessageToChat: messageForPublish,
       });
 
       return newMessage;
@@ -87,5 +115,45 @@ export class MessageService {
         error,
       );
     }
+  }
+
+  async getChatMessages({
+    chatId,
+    page,
+    limit,
+    extraPassValue,
+  }: GetChatMessagesInput) {
+    const skip = (page - 1) * limit + extraPassValue;
+
+    const chatMessages = await this.messageModel
+      .find({
+        chat: new Types.ObjectId(chatId),
+      })
+      .populate({
+        path: 'sender',
+        select: 'userName profilePhoto _id',
+        model: 'User',
+      })
+      .populate({
+        path: 'media',
+        select: 'type url _id',
+        model: 'MediaContent',
+      })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    const totalMessages = await this.messageModel.countDocuments({
+      chat: new Types.ObjectId(chatId),
+    });
+
+    const pagination = {
+      messages: chatMessages,
+      currentPage: page,
+      totalPages: Math.ceil(totalMessages / limit),
+      totalMessages,
+    };
+
+    return pagination;
   }
 }

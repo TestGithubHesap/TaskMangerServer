@@ -1,5 +1,5 @@
 import { HttpStatus, UseGuards, UseInterceptors } from '@nestjs/common';
-import { Args, Mutation, Resolver } from '@nestjs/graphql';
+import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { GraphQLErrorInterceptor } from 'src/common/interceptors/graphql-error.interceptor';
 import { MessageService } from './message.service';
 import { GraphQLError } from 'graphql';
@@ -11,6 +11,8 @@ import { UserRole } from 'src/schemas/user.schema';
 import { CurrentUser } from 'src/common/decorators/user.decorator';
 import { User as AuthUser } from 'src/types/user';
 import { CreateMessageInput } from './dto/CreateMessageInput';
+import { GetChatMessagesObject } from 'src/types/object-types/GetChatMessagesObject';
+import { GetChatMessagesInput } from './dto/GetChatMessagesInput';
 @Resolver()
 @UseInterceptors(GraphQLErrorInterceptor)
 export class MessageResolver {
@@ -39,5 +41,17 @@ export class MessageResolver {
       return this.handleError('User not found', HttpStatus.NOT_FOUND);
     }
     return this.messageService.addMessageToChat(user._id, input);
+  }
+
+  @Query(() => GetChatMessagesObject)
+  @UseGuards(AuthGuard)
+  async getChatMessages(
+    @Args('input') input: GetChatMessagesInput,
+    @CurrentUser() user: AuthUser,
+  ) {
+    if (!user) {
+      this.handleError('User not found', HttpStatus.NOT_FOUND);
+    }
+    return await this.messageService.getChatMessages(input);
   }
 }

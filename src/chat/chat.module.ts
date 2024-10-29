@@ -8,6 +8,7 @@ import { Message, MessageSchema } from 'src/schemas/message.schema';
 import { AuthModule } from 'src/auth/auth.module';
 import { MessageService } from './message.service';
 import { MessageResolver } from './message.resolver';
+import { MediaContent, MediaContentSchema } from 'src/schemas/mediaContent.schema';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { MessageResolver } from './message.resolver';
       { name: User.name, schema: UserSchema },
       { name: Chat.name, schema: ChatSchema },
       { name: Message.name, schema: MessageSchema },
+      { name: MediaContent.name, schema: MediaContentSchema },
     ]),
   ],
   providers: [ChatResolver, MessageResolver, ChatService, MessageService],

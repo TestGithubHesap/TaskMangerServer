@@ -3,43 +3,20 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 import { User } from './user.schema';
 import { Chat } from './chat.schema';
+import { MediaContent } from './mediaContent.schema';
 
 export type MessageDocument = Message & Document;
 export enum MessageType {
   TEXT = 'TEXT',
-  IMAGE = 'IMAGE',
-  VIDEO = 'VIDEO',
+  MEDIA = 'MEDIA',
 }
 
-// Enum'u GraphQL şemasına kaydet
 registerEnumType(MessageType, {
   name: 'MessageType',
   description: 'Mesaj içerik tipleri',
 });
 
 // Medya içeriği için interface
-@ObjectType()
-class MediaContent {
-  @Field()
-  @Prop()
-  url: string;
-
-  @Field({ nullable: true })
-  @Prop()
-  thumbnail?: string;
-
-  @Field({ nullable: true })
-  @Prop()
-  duration?: number;
-
-  @Field({ nullable: true })
-  @Prop()
-  size?: number;
-
-  @Field({ nullable: true })
-  @Prop()
-  mimeType?: string;
-}
 @Schema({ timestamps: true })
 @ObjectType()
 export class Message {
@@ -62,9 +39,9 @@ export class Message {
   @Field({ nullable: true })
   content?: string;
 
-  @Prop({ type: MediaContent, required: false })
+  @Prop({ type: Types.ObjectId, ref: 'MediaContent', required: false })
   @Field(() => MediaContent, { nullable: true })
-  mediaContent?: MediaContent;
+  media?: Types.ObjectId;
 
   @Prop({ type: [{ type: Types.ObjectId, ref: 'User' }] })
   @Field(() => [User])
