@@ -63,4 +63,13 @@ export class MessageResolver {
   ): Promise<boolean> {
     return this.messageService.markMessagesAsRead(user._id, messageIds);
   }
+
+  @Query(() => Message)
+  @UseGuards(AuthGuard)
+  async getMessageReaders(
+    @Args('messageId', { type: () => String }) messageId: string,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.messageService.getMessageReaders(user._id, messageId);
+  }
 }

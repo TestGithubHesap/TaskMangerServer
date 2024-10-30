@@ -19,6 +19,7 @@ import { GetUserChatsObject } from 'src/types/object-types/GetUserChatsObject';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { SignUrlOutput } from 'src/types/object-types/SignUrlObject';
 import { SignUrlInput } from './dto/SignUrlInput';
+import { ChatMessages } from 'src/types/object-types/ChatMessage';
 
 const ADD_MESSAGE = 'addMessageToChat';
 
@@ -58,7 +59,7 @@ export class ChatResolver {
 
   @UseGuards(AuthGuard, RolesGuard)
   @Roles(UserRole.WORKER)
-  @Subscription(() => Message, {
+  @Subscription(() => ChatMessages, {
     filter: async function (payload, variables, context) {
       const { req, res } = context;
       if (!req?.user) {

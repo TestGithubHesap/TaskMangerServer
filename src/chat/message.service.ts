@@ -92,6 +92,7 @@ export class MessageService {
         _id: newMessage._id,
         type: newMessage.type,
         content: newMessage.content,
+        messageIsReaded: true,
         chatId: chat._id,
         sender: {
           _id: user._id,
@@ -173,7 +174,7 @@ export class MessageService {
         $addFields: {
           messageIsReaded: {
             $cond: {
-              if: { $in: [new Types.ObjectId(userId), '$isRead'] },
+              if: { $in: [userId, '$isRead'] },
               then: true,
               else: false,
             },
@@ -195,24 +196,6 @@ export class MessageService {
         },
       },
     ]);
-
-    // const chatMessages = await this.messageModel
-    //   .find({
-    //     chat: new Types.ObjectId(chatId),
-    //   })
-    //   .populate({
-    //     path: 'sender',
-    //     select: 'userName profilePhoto _id',
-    //     model: 'User',
-    //   })
-    //   .populate({
-    //     path: 'media',
-    //     select: 'type url _id',
-    //     model: 'MediaContent',
-    //   })
-    //   .sort({ createdAt: -1 })
-    //   .skip(skip)
-    //   .limit(limit);
 
     const totalMessages = await this.messageModel.countDocuments({
       chat: new Types.ObjectId(chatId),
@@ -240,5 +223,31 @@ export class MessageService {
     );
 
     return result.modifiedCount > 0;
+  }
+
+  async getMessageReaders(userId: string, messageId: string) {
+    try {
+      const result = await this.messageModel
+        .findOne({
+          _id: new Types.ObjectId(messageId),
+          sender: new Types.ObjectId(userId),
+        })
+        .populate({
+          path: 'isRead',
+          select: '_id userName profilePhoto ',
+          model: 'User',
+        })
+        .select('isRead _id');
+      if (!result) {
+        this.handleError('Message is not found', HttpStatus.NOT_FOUND);
+      }
+      return result;
+    } catch (error) {
+      this.handleError(
+        'getMessageReaders  faild',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
+    }
   }
 }

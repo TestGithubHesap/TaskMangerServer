@@ -252,6 +252,7 @@ type Query {
   getAllMyTasks: [Task!]!
   getChats: [GetUserChatsObject!]!
   getChatMessages(input: GetChatMessagesInput!): GetChatMessagesObject!
+  getMessageReaders(messageId: String!): Message!
 }
 
 input GetChatMessagesInput {
@@ -385,5 +386,5 @@ input MediaContentInput {
 type Subscription {
   changeUserStatus(userId: String!): ChangeUserStatusObject!
   createCompanyProject(companyId: String!): Project!
-  addMessageToChat(chatId: String!): Message!
+  addMessageToChat(chatId: String!): ChatMessages!
 }
