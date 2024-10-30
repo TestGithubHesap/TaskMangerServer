@@ -52,6 +52,15 @@ export class MessageResolver {
     if (!user) {
       this.handleError('User not found', HttpStatus.NOT_FOUND);
     }
-    return await this.messageService.getChatMessages(input);
+    return await this.messageService.getChatMessages(user._id, input);
+  }
+
+  @Mutation(() => Boolean)
+  @UseGuards(AuthGuard)
+  async markMessagesAsRead(
+    @Args('messageIds', { type: () => [String] }) messageIds: string[],
+    @CurrentUser() user: AuthUser,
+  ): Promise<boolean> {
+    return this.messageService.markMessagesAsRead(user._id, messageIds);
   }
 }

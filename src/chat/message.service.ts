@@ -117,31 +117,102 @@ export class MessageService {
     }
   }
 
-  async getChatMessages({
-    chatId,
-    page,
-    limit,
-    extraPassValue,
-  }: GetChatMessagesInput) {
+  async getChatMessages(
+    userId: string,
+    { chatId, page, limit, extraPassValue }: GetChatMessagesInput,
+  ) {
     const skip = (page - 1) * limit + extraPassValue;
 
-    const chatMessages = await this.messageModel
-      .find({
-        chat: new Types.ObjectId(chatId),
-      })
-      .populate({
-        path: 'sender',
-        select: 'userName profilePhoto _id',
-        model: 'User',
-      })
-      .populate({
-        path: 'media',
-        select: 'type url _id',
-        model: 'MediaContent',
-      })
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit);
+    const chatMessages = await this.messageModel.aggregate([
+      {
+        $match: {
+          chat: new Types.ObjectId(chatId),
+        },
+      },
+      {
+        $sort: {
+          createdAt: -1,
+        },
+      },
+      {
+        $skip: skip,
+      },
+      {
+        $limit: limit,
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'sender',
+          foreignField: '_id',
+          as: 'sender',
+        },
+      },
+      {
+        $unwind: {
+          path: '$sender',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $lookup: {
+          from: 'mediacontents',
+          localField: 'media',
+          foreignField: '_id',
+          as: 'media',
+        },
+      },
+      {
+        $unwind: {
+          path: '$media',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        // Check if userId exists in the isRead array
+        $addFields: {
+          messageIsReaded: {
+            $cond: {
+              if: { $in: [new Types.ObjectId(userId), '$isRead'] },
+              then: true,
+              else: false,
+            },
+          },
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          content: 1,
+          type: 1,
+          'sender.userName': 1,
+          'sender.profilePhoto': 1,
+          'sender._id': 1,
+          'media.type': 1,
+          'media.url': 1,
+          'media._id': 1,
+          messageIsReaded: 1,
+        },
+      },
+    ]);
+
+    // const chatMessages = await this.messageModel
+    //   .find({
+    //     chat: new Types.ObjectId(chatId),
+    //   })
+    //   .populate({
+    //     path: 'sender',
+    //     select: 'userName profilePhoto _id',
+    //     model: 'User',
+    //   })
+    //   .populate({
+    //     path: 'media',
+    //     select: 'type url _id',
+    //     model: 'MediaContent',
+    //   })
+    //   .sort({ createdAt: -1 })
+    //   .skip(skip)
+    //   .limit(limit);
 
     const totalMessages = await this.messageModel.countDocuments({
       chat: new Types.ObjectId(chatId),
@@ -155,5 +226,19 @@ export class MessageService {
     };
 
     return pagination;
+  }
+
+  async markMessagesAsRead(userId: string, messageIds: string[]) {
+    const result = await this.messageModel.updateMany(
+      {
+        _id: { $in: messageIds },
+        isRead: { $ne: userId }, // Sadece henüz okunmamış mesajları güncelle
+      },
+      {
+        $addToSet: { isRead: userId },
+      },
+    );
+
+    return result.modifiedCount > 0;
   }
 }

@@ -10,7 +10,7 @@ export type CompanyDocument = Company & Document;
 @ObjectType()
 export class Company {
   @Field(() => ID)
-  _id: string;
+  _id: Types.ObjectId;
 
   @Prop({ required: true, unique: true })
   @Field()

@@ -223,8 +223,17 @@ type SignUrlOutput {
   apiKey: String!
 }
 
+type ChatMessages {
+  _id: ID!
+  content: String
+  type: MessageType!
+  sender: User!
+  media: MediaContent
+  messageIsReaded: Boolean!
+}
+
 type GetChatMessagesObject {
-  messages: [Message!]!
+  messages: [ChatMessages!]!
   totalMessages: Float!
   totalPages: Float!
   currentPage: Float!
@@ -272,6 +281,7 @@ type Mutation {
   createChat(input: CreateChatInput!): Chat!
   generateSignedUploadUrl(input: SignUrlInput!): SignUrlOutput!
   addMessageToChat(input: CreateMessageInput!): Message!
+  markMessagesAsRead(messageIds: [String!]!): Boolean!
 }
 
 input RegisterUserInput {
