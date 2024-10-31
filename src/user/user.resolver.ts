@@ -11,6 +11,8 @@ import { GraphQLError } from 'graphql';
 import { ChangeUserStatusObject } from 'src/types/object-types/ChangeUserStatusObject';
 import { PUB_SUB } from 'src/modules/pubSub.module';
 import { RedisPubSub } from 'graphql-redis-subscriptions';
+import { SearchUsersInput } from './dto/searchUsersInput';
+import { SearchUsersObject } from 'src/types/object-types/SearchUsersObject';
 const CHANGE_USER_STATUS = 'changeUserStatus';
 @Resolver('User')
 @UseInterceptors(GraphQLErrorInterceptor)
@@ -86,5 +88,14 @@ export class UserResolver {
   })
   changeUserStatus(@Args('userId') userId: string) {
     return this.pubSub.asyncIterator(CHANGE_USER_STATUS);
+  }
+
+  @Query(() => SearchUsersObject)
+  @UseGuards(AuthGuard)
+  async searchUsers(
+    @Args('input') input: SearchUsersInput,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.userService.searchUsers(input);
   }
 }

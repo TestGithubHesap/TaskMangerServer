@@ -52,6 +52,11 @@ type ChangeUserStatusObject {
   status: String!
 }
 
+type SearchUsersObject {
+  users: [User!]!
+  totalCount: Float!
+}
+
 type CompanyJoinRequest {
   _id: ID!
   user: User!
@@ -243,6 +248,7 @@ type Query {
   getMe: User!
   rolecheck: String!
   getCompanyUsers: [User!]!
+  searchUsers(input: SearchUsersInput!): SearchUsersObject!
   getCompany(companyId: String!): Company!
   getAllProjectsByCompany: [Project!]!
   getProjectsByCompany: [Project!]!
@@ -253,6 +259,12 @@ type Query {
   getChats: [GetUserChatsObject!]!
   getChatMessages(input: GetChatMessagesInput!): GetChatMessagesObject!
   getMessageReaders(messageId: String!): Message!
+}
+
+input SearchUsersInput {
+  searchText: String!
+  page: Float! = 1
+  limit: Float! = 10
 }
 
 input GetChatMessagesInput {

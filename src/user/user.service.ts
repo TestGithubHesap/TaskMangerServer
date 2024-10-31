@@ -1,12 +1,16 @@
 import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, PipelineStage } from 'mongoose';
 import { User, UserDocument } from 'src/schemas/user.schema';
 import { UpdateUserInput } from './dto/updateUserInput';
 import { GraphQLError } from 'graphql';
 import { PUB_SUB } from 'src/modules/pubSub.module';
 import { RedisPubSub } from 'graphql-redis-subscriptions';
-
+import { SearchUsersInput } from './dto/searchUsersInput';
+interface AggregationResult {
+  paginatedResults: User[];
+  totalCount: { count: number }[];
+}
 @Injectable()
 export class UserService {
   constructor(
@@ -99,6 +103,92 @@ export class UserService {
     } catch (error) {
       this.handleError(
         'Update user status failed',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
+    }
+  }
+
+  async searchUsers({ searchText, page, limit }: SearchUsersInput) {
+    try {
+      const skip = (page - 1) * limit;
+      // company
+
+      const pipeline: PipelineStage[] = [
+        {
+          $match: {
+            $or: [
+              { firstName: { $regex: searchText, $options: 'i' } },
+              { lastName: { $regex: searchText, $options: 'i' } },
+              { userName: { $regex: searchText, $options: 'i' } },
+              // { email: { $regex: query, $options: 'i' } },
+            ],
+          },
+        },
+        { $skip: skip },
+        { $limit: limit },
+        {
+          $lookup: {
+            from: 'companies',
+            let: { companyId: '$company' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $eq: ['$_id', { $toObjectId: '$$companyId' }], // companyId'yi ObjectId'ye dönüştürüyoruz
+                  },
+                },
+              },
+              {
+                $project: {
+                  _id: 1,
+                  name: 1,
+                },
+              },
+            ],
+            as: 'company',
+          },
+        },
+        {
+          $unwind: {
+            path: '$company',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+      ];
+
+      const results = await this.userModel.aggregate<AggregationResult>([
+        ...pipeline,
+        {
+          $facet: {
+            paginatedResults: [
+              {
+                $project: {
+                  firstName: 1,
+                  lastName: 1,
+                  userName: 1,
+                  _id: 1,
+                  profilePhoto: 1,
+                  company: 1,
+                },
+              },
+            ],
+            totalCount: [
+              {
+                $count: 'count',
+              },
+            ],
+          },
+        },
+      ]);
+      const users = results[0].paginatedResults;
+      const totalCount = results[0].totalCount[0]?.count || 0;
+
+      return { users, totalCount };
+      // return users;
+    } catch (error) {
+      this.handleError(
+        'Search users failed',
         HttpStatus.INTERNAL_SERVER_ERROR,
         error,
       );

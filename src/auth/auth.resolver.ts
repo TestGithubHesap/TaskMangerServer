@@ -16,11 +16,15 @@ import { GraphQLError } from 'graphql';
 import { RolesGuard } from '../common/guards/role.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { ResetPasswordInput } from './dto/ResetPasswordInput';
+import { UserService } from 'src/user/user.service';
 
 @Resolver()
 @UseInterceptors(GraphQLErrorInterceptor)
 export class AuthResolver {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly userService: UserService,
+  ) {}
   private handleError(
     message: string,
     statusCode: HttpStatus,
@@ -60,7 +64,7 @@ export class AuthResolver {
   @Query(() => User)
   @UseGuards(AuthGuard)
   async getMe(@CurrentUser() user: AuthUser) {
-    console.log("hell")
+    console.log('hell');
     if (!user) {
       this.handleError('user not found', HttpStatus.NOT_FOUND);
     }
@@ -71,7 +75,10 @@ export class AuthResolver {
 
   @Mutation(() => String)
   @UseGuards(AuthGuard)
-  async logout(@Context() context: { res: Response }) {
+  async logout(
+    @Context() context: { res: Response },
+    @CurrentUser() user: AuthUser,
+  ) {
     const { res } = context;
     try {
       res.clearCookie('refresh_token', {
@@ -86,6 +93,7 @@ export class AuthResolver {
         secure: true,
         sameSite: 'strict',
       });
+      await this.userService.updateUserStatus(user._id, 'offline');
       return 'successfully logged out ';
     } catch (error) {
       throw new Error(`Logout failed: ${error.message}`);

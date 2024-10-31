@@ -11,6 +11,8 @@ import {
   PasswordReset,
   PasswordResetSchema,
 } from 'src/schemas/passwordReset.schema';
+import { UserModule } from 'src/user/user.module';
+import { UserService } from 'src/user/user.service';
 
 @Module({
   imports: [
@@ -29,7 +31,7 @@ import {
     ]),
   ],
   controllers: [AuthController],
-  providers: [AuthService, AuthResolver],
+  providers: [AuthService, AuthResolver, UserService],
   exports: [AuthService],
 })
 export class AuthModule {}
