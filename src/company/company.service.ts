@@ -34,6 +34,17 @@ export class CompanyService {
   async getCompany(companyId: string): Promise<Company> {
     return this.companyModel.findById(companyId);
   }
+  async getCompanyByUser(userId: string): Promise<Company> {
+    const user = await this.userModel.findById(userId);
+    if (!user) {
+      this.handleError('User not found', HttpStatus.NOT_FOUND);
+    }
+    const company = await this.companyModel.findById(user.company);
+    if (!company) {
+      this.handleError('Company not found', HttpStatus.NOT_FOUND);
+    }
+    return company;
+  }
 
   async createCompany(input: CreateCompanyInput) {
     const company = new this.companyModel(input);
@@ -110,5 +121,53 @@ export class CompanyService {
     }
 
     return joinRequest;
+  }
+
+  async getCompanyJoinRequests(
+    companyId: string | null,
+    status: JoinRequestStatus,
+    userId: string,
+  ): Promise<CompanyJoinRequest[]> {
+    // Find user and validate existence
+    const user = await this.userModel.findById(userId);
+    if (!user) {
+      this.handleError('User not found.', HttpStatus.NOT_FOUND);
+    }
+
+    const isAdmin = user.roles.includes(UserRole.ADMIN);
+    const isExecutive = user.roles.includes(UserRole.EXECUTIVE);
+
+    // If not admin or executive, throw error
+    if (!isAdmin && !isExecutive) {
+      this.handleError(
+        'User is not authorized to view the requests.',
+        HttpStatus.FORBIDDEN,
+      );
+    }
+
+    // Query configuration based on role
+    const queryConfig = {
+      status,
+      company: isAdmin ? companyId || user.company : user.company,
+    };
+
+    const populateConfig = {
+      path: 'user',
+      select: '_id userName profilePhoto',
+    };
+
+    // If executive tries to access other company's requests, throw error
+    if (!isAdmin && companyId && companyId !== user.company.toString()) {
+      this.handleError(
+        'Executives can only view their own company requests',
+        HttpStatus.FORBIDDEN,
+      );
+    }
+
+    return this.companyJoinRequestModel
+      .find(queryConfig)
+      .populate(populateConfig)
+      .lean()
+      .exec();
   }
 }

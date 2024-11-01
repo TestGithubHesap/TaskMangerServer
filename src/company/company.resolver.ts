@@ -11,7 +11,10 @@ import { UserRole } from 'src/schemas/user.schema';
 import { CurrentUser } from 'src/common/decorators/user.decorator';
 import { User as AuthUser } from '../types/user';
 import { GraphQLError } from 'graphql';
-import { CompanyJoinRequest } from 'src/schemas/companyJoinRequest.schema';
+import {
+  CompanyJoinRequest,
+  JoinRequestStatus,
+} from 'src/schemas/companyJoinRequest.schema';
 import { GraphQLErrorInterceptor } from 'src/common/interceptors/graphql-error.interceptor';
 @Resolver('Company')
 @UseInterceptors(GraphQLErrorInterceptor)
@@ -34,11 +37,34 @@ export class CompanyResolver {
     return this.companyService.getCompany(companyId);
   }
 
+  @Query(() => Company)
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.EXECUTIVE)
+  async getCompanyByUser(@CurrentUser() user: AuthUser): Promise<Company> {
+    return this.companyService.getCompanyByUser(user._id);
+  }
+
   @Mutation(() => Company)
   @UseGuards(AuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   async createCompany(@Args('input') input: CreateCompanyInput) {
     return this.companyService.createCompany(input);
+  }
+
+  @Query(() => [CompanyJoinRequest])
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(UserRole.EXECUTIVE, UserRole.ADMIN)
+  async getCompanyJoinRequests(
+    @Args('companyId', { nullable: true }) companyId: string | null,
+    @Args('status', { type: () => JoinRequestStatus })
+    status: JoinRequestStatus,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.companyService.getCompanyJoinRequests(
+      companyId,
+      status,
+      user._id,
+    );
   }
 
   @Mutation(() => CompanyJoinRequest)

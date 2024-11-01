@@ -250,6 +250,8 @@ type Query {
   getCompanyUsers: [User!]!
   searchUsers(input: SearchUsersInput!): SearchUsersObject!
   getCompany(companyId: String!): Company!
+  getCompanyByUser: Company!
+  getCompanyJoinRequests(companyId: String, status: JoinRequestStatus!): [CompanyJoinRequest!]!
   getAllProjectsByCompany: [Project!]!
   getProjectsByCompany: [Project!]!
   getProjectWithDetails(projectId: String!): Project!

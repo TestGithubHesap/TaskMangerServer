@@ -195,6 +195,7 @@ export class ChatService {
       },
       {
         $project: {
+          // participants: 1,
           participants: {
             $filter: {
               input: '$participants',
