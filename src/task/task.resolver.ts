@@ -15,6 +15,7 @@ import { UpdateTaskStatusInput } from './dto/updateTaskStatusInput';
 import { RolesGuard } from 'src/common/guards/role.guard';
 import { Project } from 'src/schemas/project.schema';
 import { GetAllTasksByProjectObject } from 'src/types/object-types/GetAllTasksByProjectObject';
+import { UpdateTaskInput } from './dto/updateTaskInput';
 @Resolver('Task')
 @UseInterceptors(GraphQLErrorInterceptor)
 export class TaskResolver {
@@ -88,6 +89,20 @@ export class TaskResolver {
       input.status,
     );
   }
+
+  @Mutation(() => Task)
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.EXECUTIVE)
+  async updateTask(
+    @Args('input') input: UpdateTaskInput,
+    @CurrentUser() user: AuthUser,
+  ): Promise<Task> {
+    if (!user) {
+      this.handleError('user not found', HttpStatus.NOT_FOUND);
+    }
+    return this.taskService.updateTask(user._id, input);
+  }
+
   @Query(() => Task)
   @UseGuards(AuthGuard)
   async getTask(@Args('taskId') taskId: string): Promise<Task> {

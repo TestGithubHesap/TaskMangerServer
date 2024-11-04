@@ -39,7 +39,7 @@ export class CompanyResolver {
 
   @Query(() => Company)
   @UseGuards(AuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.EXECUTIVE)
+  @Roles(UserRole.ADMIN, UserRole.EXECUTIVE, UserRole.WORKER)
   async getCompanyByUser(@CurrentUser() user: AuthUser): Promise<Company> {
     return this.companyService.getCompanyByUser(user._id);
   }

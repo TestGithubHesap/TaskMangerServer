@@ -7,6 +7,7 @@ import { CreateTaskInput } from './dto/createTaskInput';
 import { GraphQLError } from 'graphql';
 import { Project, ProjectDocument } from 'src/schemas/project.schema';
 import { User, UserDocument } from 'src/schemas/user.schema';
+import { UpdateTaskInput } from './dto/updateTaskInput';
 
 @Injectable()
 export class TaskService {
@@ -31,6 +32,23 @@ export class TaskService {
         error,
       },
     });
+  }
+
+  async updateTask(userId: string, input: UpdateTaskInput) {
+    const { taskId, ...updateData } = input;
+    const user = await this.userModel.findById(userId);
+    const task = await this.taskModel.findById(taskId);
+    if (!user || !task) {
+      this.handleError('user or  task  not found', HttpStatus.NOT_FOUND);
+    }
+    // `updateData` içindeki sadece gönderilen alanları günceller
+    Object.keys(updateData).forEach((key) => {
+      if (updateData[key] !== undefined) {
+        task[key] = updateData[key];
+      }
+    });
+
+    return await task.save(); // Task'i kaydet ve güncellenmiş task'i döndür
   }
 
   async createTask(

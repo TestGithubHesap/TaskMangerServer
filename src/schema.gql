@@ -293,6 +293,7 @@ type Mutation {
   updateTaskHierarchy(input: UpdateTaskHierarchyInput!): Task!
   removeParentTask(taskId: String!): String!
   updateTaskStatus(input: UpdateTaskStatusInput!): String!
+  updateTask(input: UpdateTaskInput!): Task!
   createChat(input: CreateChatInput!): Chat!
   generateSignedUploadUrl(input: SignUrlInput!): SignUrlOutput!
   addMessageToChat(input: CreateMessageInput!): Message!
@@ -370,6 +371,16 @@ input UpdateTaskHierarchyInput {
 input UpdateTaskStatusInput {
   taskId: ID!
   status: TaskStatus!
+}
+
+input UpdateTaskInput {
+  taskId: ID!
+  title: String
+  description: String
+  assignee: String
+  status: TaskStatus
+  priority: TaskPriority
+  dueDate: String
 }
 
 input CreateChatInput {
