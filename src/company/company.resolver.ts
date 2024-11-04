@@ -69,7 +69,7 @@ export class CompanyResolver {
 
   @Mutation(() => CompanyJoinRequest)
   @UseGuards(AuthGuard, RolesGuard)
-  @Roles(UserRole.EXECUTIVE, UserRole.WORKER)
+  @Roles(UserRole.EXECUTIVE, UserRole.WORKER, UserRole.USER)
   async requestToJoinCompany(
     @Args('companyId') input: string,
     @CurrentUser() user: AuthUser,

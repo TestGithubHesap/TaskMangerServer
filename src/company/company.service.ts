@@ -91,9 +91,16 @@ export class CompanyService {
     }
 
     // Onaylayan kişinin bilgilerini alın
-    const approverUser = await this.userModel.findById(approverUserId);
-    if (!approverUser) {
-      this.handleError('Approver user not found.', HttpStatus.NOT_FOUND);
+    const [approverUser, requestingUser] = await Promise.all([
+      this.userModel.findById(approverUserId),
+      this.userModel.findById(joinRequest.user._id.toString()),
+    ]);
+    // const approverUser = await this.userModel.findById(approverUserId);
+    if (!approverUser || !requestingUser) {
+      this.handleError(
+        'Approver user or Requesting user  not found. ',
+        HttpStatus.NOT_FOUND,
+      );
     }
 
     // Onaylayan kişi admin veya zaten yönetici olmalı
@@ -111,12 +118,16 @@ export class CompanyService {
       ? JoinRequestStatus.APPROVED
       : JoinRequestStatus.REJECTED;
     await joinRequest.save();
-    // console.log(joinRequest.user.roles.includes(UserRole.EXECUTIVE));
 
     if (approve) {
+      const updatedRoles = Array.from(
+        new Set([...requestingUser.roles, UserRole.WORKER]),
+      );
+
       await this.userModel.findByIdAndUpdate(joinRequest.user._id, {
         company: joinRequest.company,
         isCompanyAdmin: joinRequest.user.roles.includes(UserRole.EXECUTIVE),
+        roles: updatedRoles, // Güncellenmiş roller
       });
     }
 

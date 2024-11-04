@@ -6,12 +6,14 @@ import { Task, TaskDocument, TaskStatus } from 'src/schemas/task.schema';
 import { CreateTaskInput } from './dto/createTaskInput';
 import { GraphQLError } from 'graphql';
 import { Project, ProjectDocument } from 'src/schemas/project.schema';
+import { User, UserDocument } from 'src/schemas/user.schema';
 
 @Injectable()
 export class TaskService {
   constructor(
     @InjectModel(Task.name) private taskModel: Model<TaskDocument>,
     @InjectModel(Project.name) private projectModel: Model<ProjectDocument>,
+    @InjectModel(User.name) private userModel: Model<UserDocument>,
   ) {}
 
   private parseDateString(dateString: string): Date {
@@ -285,19 +287,139 @@ export class TaskService {
       .select('_id title status priority assignee description');
   }
 
-  async getAllMyTasks(userId) {
-    return this.taskModel
-      .find({
-        assignee: userId,
-      })
-      .populate({
-        path: 'parentTask',
-        select: '_id title',
-      })
-      .populate({
-        path: 'subTasks',
-        select: '_id title',
-        model: 'Task',
-      });
+  async getAllMyTasks(userId: string) {
+    // Önce kullanıcı bilgilerini alalım
+    const user = await this.userModel.findById(userId);
+
+    if (!user || !user.company) {
+      throw new Error('User not found or not associated with any company');
+    }
+
+    const tasks = await this.taskModel.aggregate([
+      // Kullanıcıya atanan görevleri bul
+      {
+        $match: {
+          assignee: userId,
+        },
+      },
+      // Projeyi join et
+      {
+        $lookup: {
+          from: 'projects',
+          let: { projectId: '$project' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $eq: ['$_id', { $toObjectId: '$$projectId' }], // companyId'yi ObjectId'ye dönüştürüyoruz
+                },
+              },
+            },
+            {
+              $project: {
+                _id: 1,
+                company: 1,
+              },
+            },
+          ],
+          as: 'project',
+        },
+      },
+      // Array'i tekil objeye çevir
+      {
+        $unwind: '$project',
+      },
+      // Şirket kontrolü
+      {
+        $match: {
+          'project.company': user.company.toString(),
+        },
+      },
+      // Parent task bilgilerini getir
+      {
+        $lookup: {
+          from: 'tasks',
+          let: { parentTaskId: '$parentTask' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $eq: ['$_id', { $toObjectId: '$$parentTaskId' }],
+                },
+              },
+            },
+            {
+              $project: {
+                _id: 1,
+                title: 1,
+              },
+            },
+          ],
+          as: 'parentTask',
+        },
+      },
+      // // Parent task array'ini tekil objeye çevir
+      {
+        $unwind: {
+          path: '$parentTask',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      // // Sub tasks bilgilerini getir
+      {
+        $lookup: {
+          from: 'tasks',
+          let: {
+            subTaskIds: {
+              $map: {
+                input: '$subTasks',
+                as: 'id',
+                in: { $toObjectId: '$$id' },
+              },
+            },
+          },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $in: ['$_id', '$$subTaskIds'],
+                },
+              },
+            },
+            {
+              $project: {
+                _id: 1,
+                title: 1,
+              },
+            },
+          ],
+          as: 'subTasks',
+        },
+      },
+
+      // // Sonuçları düzenle
+      {
+        $project: {
+          _id: 1,
+          title: 1,
+          description: 1,
+          status: 1,
+          priority: 1,
+          dueDate: 1,
+          completedAt: 1,
+          createdAt: 1,
+          updatedAt: 1,
+          project: {
+            _id: 1,
+            name: 1,
+            company: 1,
+            status: 1,
+          },
+          parentTask: 1,
+          subTasks: 1,
+        },
+      },
+    ]);
+    return tasks;
   }
 }
