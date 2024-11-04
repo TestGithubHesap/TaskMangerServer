@@ -177,15 +177,42 @@ export class TaskService {
 
   async updateTaskUpdate(userId: string, taskId: string, status: TaskStatus) {
     try {
-      // Görevi bul
-      const task = await this.taskModel.findOne({
-        _id: taskId,
-        assignee: userId,
-      });
+      const user = await this.userModel.findById(userId);
+
+      if (!user || !user.company) {
+        this.handleError(
+          'User not found or not associated with any company',
+          HttpStatus.NOT_FOUND,
+        );
+      }
+
+      // Task'ı proje bilgisiyle birlikte bul
+      const task = await this.taskModel
+        .findOne({
+          _id: taskId,
+          assignee: userId,
+        })
+        .populate('project'); // project alanını populate et
+
       if (!task) {
         this.handleError('Task not found', HttpStatus.NOT_FOUND);
       }
 
+      // Task'ın projesi yoksa hata döndür
+      if (!task.project) {
+        this.handleError(
+          'Task is not associated with any project',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      // Task'ın projesinin company ID'si ile user'ın company ID'sini karşılaştır
+      if (task.project.company.toString() !== user.company.toString()) {
+        this.handleError(
+          'User is not authorized to update this task',
+          HttpStatus.FORBIDDEN,
+        );
+      }
       task.status = status;
 
       task.save();
