@@ -16,6 +16,7 @@ import {
   JoinRequestStatus,
 } from 'src/schemas/companyJoinRequest.schema';
 import { GraphQLErrorInterceptor } from 'src/common/interceptors/graphql-error.interceptor';
+import { CompanyWithButton } from './dto/CompanyWithButton';
 @Resolver('Company')
 @UseInterceptors(GraphQLErrorInterceptor)
 export class CompanyResolver {
@@ -37,11 +38,18 @@ export class CompanyResolver {
     return this.companyService.getCompany(companyId);
   }
 
-  @Query(() => Company)
+  @Query(() => CompanyWithButton)
   @UseGuards(AuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.EXECUTIVE, UserRole.WORKER)
-  async getCompanyByUser(@CurrentUser() user: AuthUser): Promise<Company> {
-    return this.companyService.getCompanyByUser(user._id);
+  @Roles(UserRole.ADMIN, UserRole.EXECUTIVE, UserRole.WORKER, UserRole.USER)
+  async getCompanyByUser(
+    @Args('companyId', { nullable: true }) companyId: string | null,
+    @CurrentUser() user: AuthUser,
+  ): Promise<{
+    company: Company;
+    showCompanyjoinButton: boolean;
+    isJoinRequest?: boolean;
+  }> {
+    return this.companyService.getCompanyByUser(user._id, companyId);
   }
 
   @Mutation(() => Company)
@@ -78,6 +86,16 @@ export class CompanyResolver {
       this.handleError('user not found', HttpStatus.NOT_FOUND);
     }
     return this.companyService.requestToJoinCompany(user._id, input);
+  }
+
+  @Mutation(() => CompanyJoinRequest)
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(UserRole.EXECUTIVE, UserRole.WORKER, UserRole.USER)
+  async cancelJoinCompanyRequest(
+    @Args('companyId') companyId: string,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.companyService.cancelJoinCompanyRequest(user._id, companyId);
   }
 
   @Mutation(() => CompanyJoinRequest)

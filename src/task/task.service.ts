@@ -6,7 +6,7 @@ import { Task, TaskDocument, TaskStatus } from 'src/schemas/task.schema';
 import { CreateTaskInput } from './dto/createTaskInput';
 import { GraphQLError } from 'graphql';
 import { Project, ProjectDocument } from 'src/schemas/project.schema';
-import { User, UserDocument } from 'src/schemas/user.schema';
+import { User, UserDocument, UserRole } from 'src/schemas/user.schema';
 import { UpdateTaskInput } from './dto/updateTaskInput';
 
 @Injectable()
@@ -37,14 +37,32 @@ export class TaskService {
   async updateTask(userId: string, input: UpdateTaskInput) {
     const { taskId, ...updateData } = input;
     const user = await this.userModel.findById(userId);
-    const task = await this.taskModel.findById(taskId);
+    const task = await this.taskModel.findById(taskId).populate({
+      path: 'project',
+      select: 'company',
+    });
     if (!user || !task) {
       this.handleError('user or  task  not found', HttpStatus.NOT_FOUND);
     }
+
+    if (
+      !user.roles.includes(UserRole.ADMIN) &&
+      (!user.roles.includes(UserRole.EXECUTIVE) ||
+        user.company.toString() !== task.project.company.toString())
+    ) {
+      this.handleError(
+        'The user does not have permission to make changes to the task.',
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+
     // `updateData` içindeki sadece gönderilen alanları günceller
     Object.keys(updateData).forEach((key) => {
       if (updateData[key] !== undefined) {
-        task[key] = updateData[key];
+        task[key] =
+          key == 'dueDate'
+            ? this.parseDateString(updateData[key])
+            : updateData[key];
       }
     });
 
@@ -267,33 +285,179 @@ export class TaskService {
     return this.taskModel.find().exec();
   }
 
-  async findOneTask(taskId: string): Promise<Task> {
-    return this.taskModel
-      .findById(taskId)
-      .populate([
-        {
-          path: 'parentTask',
-          select: '_id title',
-        },
-        {
-          path: 'subTasks',
-          select: '_id title',
-          model: 'Task',
-        },
-        {
-          path: 'assignee',
-          select: '_id firstName lastName profilePhoto',
-        },
-        {
-          path: 'createdByUser',
-          select: '_id firstName lastName profilePhoto',
-        },
-        {
-          path: 'project',
-          select: '_id name',
-        },
-      ])
-      .lean(); // Bellek kullanımını optimize eder
+  async findOneTask(userId: string, taskId: string): Promise<Task> {
+    const [user, task] = await Promise.all([
+      this.userModel.findById(userId),
+      this.taskModel
+        .findById(taskId)
+        .populate([
+          {
+            path: 'parentTask',
+            select: '_id title',
+          },
+          {
+            path: 'subTasks',
+            select: '_id title',
+            model: 'Task',
+          },
+          {
+            path: 'assignee',
+            select: '_id firstName lastName profilePhoto',
+          },
+          {
+            path: 'createdByUser',
+            select: '_id firstName lastName profilePhoto',
+          },
+          {
+            path: 'project',
+            select: '_id name company',
+          },
+        ])
+        .lean(),
+    ]);
+    if (!user || !task) {
+      this.handleError('user or task not  found', HttpStatus.NOT_FOUND);
+    }
+
+    if (
+      !user.roles.includes(UserRole.ADMIN) &&
+      user.company.toString() !== task.project.company.toString()
+    ) {
+      this.handleError(
+        'The user does not have permission to make changes to the task.',
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+
+    return task;
+    // const projectMatchStage = user.roles.includes(UserRole.ADMIN)
+    //   ? {}
+    //   : { 'project.company': user.company.toString() };
+    // const task = await this.taskModel.aggregate([
+    //   // Kullanıcıya atanan görevleri bul
+    //   {
+    //     $match: {
+    //       _id: taskId,
+    //     },
+    //   },
+    //   // Projeyi join et
+    //   {
+    //     $lookup: {
+    //       from: 'projects',
+    //       let: { projectId: '$project' },
+    //       pipeline: [
+    //         {
+    //           $match: {
+    //             $expr: {
+    //               $eq: ['$_id', { $toObjectId: '$$projectId' }], // companyId'yi ObjectId'ye dönüştürüyoruz
+    //             },
+    //           },
+    //         },
+    //         {
+    //           $project: {
+    //             _id: 1,
+    //             company: 1,
+    //             name: 1,
+    //           },
+    //         },
+    //       ],
+    //       as: 'project',
+    //     },
+    //   },
+    //   // Array'i tekil objeye çevir
+    //   {
+    //     $unwind: '$project',
+    //   },
+    //   // Şirket kontrolü
+    //   {
+    //     $match: {
+    //       projectMatchStage,
+    //     },
+    //   },
+    //   // Parent task bilgilerini getir
+    //   {
+    //     $lookup: {
+    //       from: 'tasks',
+    //       let: { parentTaskId: '$parentTask' },
+    //       pipeline: [
+    //         {
+    //           $match: {
+    //             $expr: {
+    //               $eq: ['$_id', { $toObjectId: '$$parentTaskId' }],
+    //             },
+    //           },
+    //         },
+    //         {
+    //           $project: {
+    //             _id: 1,
+    //             title: 1,
+    //           },
+    //         },
+    //       ],
+    //       as: 'parentTask',
+    //     },
+    //   },
+    //   // // Parent task array'ini tekil objeye çevir
+    //   {
+    //     $unwind: {
+    //       path: '$parentTask',
+    //       preserveNullAndEmptyArrays: true,
+    //     },
+    //   },
+    //   // // Sub tasks bilgilerini getir
+    //   {
+    //     $lookup: {
+    //       from: 'tasks',
+    //       let: {
+    //         subTaskIds: {
+    //           $map: {
+    //             input: '$subTasks',
+    //             as: 'id',
+    //             in: { $toObjectId: '$$id' },
+    //           },
+    //         },
+    //       },
+    //       pipeline: [
+    //         {
+    //           $match: {
+    //             $expr: {
+    //               $in: ['$_id', '$$subTaskIds'],
+    //             },
+    //           },
+    //         },
+    //         {
+    //           $project: {
+    //             _id: 1,
+    //             title: 1,
+    //           },
+    //         },
+    //       ],
+    //       as: 'subTasks',
+    //     },
+    //   },
+
+    //   // // Sonuçları düzenle
+    //   {
+    //     $project: {
+    //       _id: 1,
+    //       title: 1,
+    //       description: 1,
+    //       status: 1,
+    //       priority: 1,
+    //       dueDate: 1,
+    //       completedAt: 1,
+    //       createdAt: 1,
+    //       updatedAt: 1,
+    //       project: {
+    //         _id: 1,
+    //         name: 1,
+    //         company: 1,
+    //       },
+    //       parentTask: 1,
+    //       subTasks: 1,
+    //     },
+    //   },
+    // ]);
   }
 
   async getAllTasksByProject(projectId: string): Promise<{

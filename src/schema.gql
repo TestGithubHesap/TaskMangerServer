@@ -71,6 +71,13 @@ enum JoinRequestStatus {
   PENDING
   APPROVED
   REJECTED
+  CANCELED
+}
+
+type CompanyWithButton {
+  company: Company!
+  showCompanyjoinButton: Boolean!
+  isJoinRequest: Boolean
 }
 
 type Project {
@@ -250,7 +257,7 @@ type Query {
   getCompanyUsers: [User!]!
   searchUsers(input: SearchUsersInput!): SearchUsersObject!
   getCompany(companyId: String!): Company!
-  getCompanyByUser: Company!
+  getCompanyByUser(companyId: String): CompanyWithButton!
   getCompanyJoinRequests(companyId: String, status: JoinRequestStatus!): [CompanyJoinRequest!]!
   getAllProjectsByCompany: [Project!]!
   getProjectsByCompany: [Project!]!
@@ -287,6 +294,7 @@ type Mutation {
   updateUserStatus(status: String!): Boolean!
   createCompany(input: CreateCompanyInput!): Company!
   requestToJoinCompany(companyId: String!): CompanyJoinRequest!
+  cancelJoinCompanyRequest(companyId: String!): CompanyJoinRequest!
   respondToJoinRequest(requestId: String!, approve: Boolean!): CompanyJoinRequest!
   createProject(input: CreateProjectInput!): Project!
   createTask(input: CreateTaskInput!): Task!

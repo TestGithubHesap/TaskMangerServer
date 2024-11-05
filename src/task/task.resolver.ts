@@ -104,9 +104,13 @@ export class TaskResolver {
   }
 
   @Query(() => Task)
-  @UseGuards(AuthGuard)
-  async getTask(@Args('taskId') taskId: string): Promise<Task> {
-    return this.taskService.findOneTask(taskId);
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(UserRole.WORKER, UserRole.EXECUTIVE, UserRole.ADMIN)
+  async getTask(
+    @Args('taskId') taskId: string,
+    @CurrentUser() user: AuthUser,
+  ): Promise<Task> {
+    return this.taskService.findOneTask(user._id, taskId);
   }
   @Query(() => GetAllTasksByProjectObject)
   @UseGuards(AuthGuard)

@@ -34,16 +34,59 @@ export class CompanyService {
   async getCompany(companyId: string): Promise<Company> {
     return this.companyModel.findById(companyId);
   }
-  async getCompanyByUser(userId: string): Promise<Company> {
+  async getCompanyByUser(
+    userId: string,
+    companyId: string | null,
+  ): Promise<{
+    company: Company;
+    showCompanyjoinButton: boolean;
+    isJoinRequest?: boolean;
+  }> {
     const user = await this.userModel.findById(userId);
     if (!user) {
       this.handleError('User not found', HttpStatus.NOT_FOUND);
     }
+
+    if (companyId) {
+      const company = await this.companyModel.findById(companyId);
+
+      if (!company) {
+        this.handleError('Company not found', HttpStatus.NOT_FOUND);
+      }
+      const companyJoinReques = await this.companyJoinRequestModel.findOne({
+        company: companyId,
+        user: userId,
+        status: JoinRequestStatus.PENDING,
+      });
+      return {
+        company,
+        showCompanyjoinButton: !user.company,
+        isJoinRequest: !!companyJoinReques,
+      };
+    }
+
     const company = await this.companyModel.findById(user.company);
     if (!company) {
       this.handleError('Company not found', HttpStatus.NOT_FOUND);
     }
-    return company;
+    return {
+      company,
+      showCompanyjoinButton: false,
+      isJoinRequest: false,
+    };
+  }
+
+  async cancelJoinCompanyRequest(userId: string, companyId: string) {
+    const companyJoinRequest = await this.companyJoinRequestModel.findOne({
+      company: companyId,
+      user: userId,
+      status: JoinRequestStatus.PENDING,
+    });
+    if (!companyJoinRequest) {
+      this.handleError('request is not found', HttpStatus.NOT_FOUND);
+    }
+    companyJoinRequest.status = JoinRequestStatus.CANCELED;
+    return await companyJoinRequest.save();
   }
 
   async createCompany(input: CreateCompanyInput) {
