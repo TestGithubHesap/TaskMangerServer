@@ -51,6 +51,10 @@ export class Chat {
   @Field(() => [User])
   participants: Types.ObjectId[];
 
+  @Prop({ type: [{ type: Types.ObjectId, ref: 'User' }] }) // Yeni eklenen admin alanı
+  @Field(() => [User])
+  admins: Types.ObjectId[];
+
   @Prop({ type: [{ type: Types.ObjectId, ref: 'Message' }] })
   @Field(() => [Message])
   messages: Types.ObjectId[];

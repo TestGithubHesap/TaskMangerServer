@@ -8,7 +8,7 @@ import {
   MessageDocument,
   MessageType,
 } from 'src/schemas/message.schema';
-import { User, UserDocument } from 'src/schemas/user.schema';
+import { User, UserDocument, UserRole } from 'src/schemas/user.schema';
 import { CreateChatInput } from './dto/CreateChatInput';
 
 @Injectable()
@@ -61,6 +61,7 @@ export class ChatService {
           : MetadataType.GROUP;
       const chat = new this.chatModel({
         chatName: input.chatName,
+        admins: [new Types.ObjectId(userId)],
         createdByUser: new Types.ObjectId(userId),
         participants: uniqueParticipantsObjectId,
         metadata: {
@@ -163,6 +164,25 @@ export class ChatService {
       },
       {
         $lookup: {
+          from: 'users',
+          let: { userId: new Types.ObjectId(userId) },
+          pipeline: [
+            {
+              $match: {
+                $expr: { $eq: ['$_id', '$$userId'] },
+              },
+            },
+            {
+              $project: {
+                roles: 1,
+              },
+            },
+          ],
+          as: 'currentUser',
+        },
+      },
+      {
+        $lookup: {
           from: 'messages',
           localField: 'messages',
           foreignField: '_id',
@@ -198,7 +218,7 @@ export class ChatService {
       {
         $project: {
           chatName: 1,
-          // participants: 1,
+          admins: 1, // admins alanını koruyoruz
           participants: {
             $filter: {
               input: '$participants',
@@ -209,6 +229,19 @@ export class ChatService {
             },
           },
           lastMessage: { $arrayElemAt: ['$lastMessage', 0] },
+          isAdmin: {
+            $or: [
+              { $in: [new Types.ObjectId(userId), '$admins'] },
+              {
+                $in: [
+                  UserRole.ADMIN,
+                  {
+                    $ifNull: [{ $arrayElemAt: ['$currentUser.roles', 0] }, []],
+                  },
+                ],
+              },
+            ],
+          },
         },
       },
       {
@@ -220,6 +253,7 @@ export class ChatService {
           'participants.userName': 1,
           'participants.profilePhoto': 1,
           lastMessage: 1,
+          isAdmin: 1,
         },
       },
     ]);

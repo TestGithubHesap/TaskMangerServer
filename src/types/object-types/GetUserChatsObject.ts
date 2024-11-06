@@ -15,4 +15,7 @@ export class GetUserChatsObject {
 
   @Field(() => Message, { nullable: true })
   lastMessage: Message;
+
+  @Field(() => Boolean)
+  isAdmin: boolean;
 }

@@ -213,6 +213,7 @@ enum MetadataType {
 type Chat {
   _id: ID!
   participants: [User!]!
+  admins: [User!]!
   messages: [Message!]!
   chatName: String
   isDeleted: Boolean!
@@ -228,6 +229,7 @@ type GetUserChatsObject {
   participants: [User!]!
   chatName: String
   lastMessage: Message
+  isAdmin: Boolean!
 }
 
 type SignUrlOutput {
