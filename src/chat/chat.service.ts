@@ -9,6 +9,7 @@ import {
   MessageType,
 } from 'src/schemas/message.schema';
 import { User, UserDocument } from 'src/schemas/user.schema';
+import { CreateChatInput } from './dto/CreateChatInput';
 
 @Injectable()
 export class ChatService {
@@ -29,15 +30,15 @@ export class ChatService {
       },
     });
   }
-  async createChat(userId: string, participants: string[]): Promise<Chat> {
+  async createChat(userId: string, input: CreateChatInput): Promise<Chat> {
     try {
       // Giriş doğrulamaları
 
-      await this.validateChatCreation(userId, participants);
+      await this.validateChatCreation(userId, input.participants);
 
       // Katılımcıları benzersiz yap ve oluşturan kullanıcıyı ekle
       const uniqueParticipantsObjectId = [
-        ...new Set([...participants, userId]),
+        ...new Set([...input.participants, userId]),
       ].map((id) => new Types.ObjectId(id));
 
       const existingChat = await this.findExistingChat(
@@ -59,6 +60,7 @@ export class ChatService {
           ? MetadataType.DIRECT
           : MetadataType.GROUP;
       const chat = new this.chatModel({
+        chatName: input.chatName,
         createdByUser: new Types.ObjectId(userId),
         participants: uniqueParticipantsObjectId,
         metadata: {
@@ -195,6 +197,7 @@ export class ChatService {
       },
       {
         $project: {
+          chatName: 1,
           // participants: 1,
           participants: {
             $filter: {
@@ -210,6 +213,8 @@ export class ChatService {
       },
       {
         $project: {
+          _id: 1,
+          chatName: 1,
           'participants._id': 1,
           'participants.status': 1,
           'participants.userName': 1,
@@ -220,5 +225,36 @@ export class ChatService {
     ]);
 
     return chats;
+  }
+
+  async leaveChat(userId: string, chatId: string) {
+    try {
+      const userObjectId = new Types.ObjectId(userId);
+      const chat = await this.chatModel.updateOne(
+        { _id: chatId, participants: { $in: [userObjectId] } },
+        { $pull: { participants: userObjectId } },
+      );
+      if (chat.modifiedCount < 1) {
+        this.handleError(
+          'You are not a participant of this chat',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      // Katılımcı sayısını kontrol et
+      const updatedChat = await this.chatModel.findOne({ _id: chatId });
+      if (updatedChat && updatedChat.participants.length === 0) {
+        await this.chatModel.deleteOne({ _id: chatId });
+        return 'chat deleted because no participants left';
+      }
+
+      return 'user left chat';
+    } catch (error) {
+      this.handleError(
+        'Error while leaving chat',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
+    }
   }
 }

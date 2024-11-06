@@ -214,6 +214,7 @@ type Chat {
   _id: ID!
   participants: [User!]!
   messages: [Message!]!
+  chatName: String
   isDeleted: Boolean!
   createdByUser: User!
   deletedAt: String
@@ -225,6 +226,7 @@ type Chat {
 type GetUserChatsObject {
   _id: ID!
   participants: [User!]!
+  chatName: String
   lastMessage: Message
 }
 
@@ -304,6 +306,7 @@ type Mutation {
   updateTask(input: UpdateTaskInput!): Task!
   createChat(input: CreateChatInput!): Chat!
   generateSignedUploadUrl(input: SignUrlInput!): SignUrlOutput!
+  leaveChat(chatId: String!): String!
   addMessageToChat(input: CreateMessageInput!): Message!
   markMessagesAsRead(messageIds: [String!]!): Boolean!
 }
@@ -393,6 +396,7 @@ input UpdateTaskInput {
 
 input CreateChatInput {
   participants: [String!]!
+  chatName: String
 }
 
 input SignUrlInput {

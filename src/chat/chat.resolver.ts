@@ -54,7 +54,7 @@ export class ChatResolver {
       this.handleError('user not found', HttpStatus.NOT_FOUND);
     }
 
-    return this.chatService.createChat(user._id, input.participants);
+    return this.chatService.createChat(user._id, input);
   }
 
   @UseGuards(AuthGuard, RolesGuard)
@@ -108,5 +108,14 @@ export class ChatResolver {
       cloudName: process.env.CLD_CLOUD_NAME,
       apiKey: process.env.CLD_API_KEY,
     };
+  }
+
+  @Mutation(() => String)
+  @UseGuards(AuthGuard)
+  async leaveChat(
+    @Args('chatId') chatId: string,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.chatService.leaveChat(user._id, chatId);
   }
 }

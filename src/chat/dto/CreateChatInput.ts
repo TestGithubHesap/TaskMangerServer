@@ -7,4 +7,7 @@ export class CreateChatInput {
   @IsArray()
   @IsMongoId({ each: true })
   participants: string[];
+
+  @Field(() => String, { nullable: true })
+  chatName?: string;
 }

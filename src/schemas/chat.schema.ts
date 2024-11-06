@@ -55,6 +55,10 @@ export class Chat {
   @Field(() => [Message])
   messages: Types.ObjectId[];
 
+  @Prop({ type: String })
+  @Field(() => String, { nullable: true })
+  chatName?: string;
+
   @Prop({ default: false })
   @Field()
   isDeleted: boolean;

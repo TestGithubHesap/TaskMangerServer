@@ -10,6 +10,9 @@ export class GetUserChatsObject {
   @Field(() => [User])
   participants: User[];
 
+  @Field(() => String, { nullable: true })
+  chatName?: string;
+
   @Field(() => Message, { nullable: true })
   lastMessage: Message;
 }
