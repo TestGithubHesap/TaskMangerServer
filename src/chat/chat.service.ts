@@ -291,4 +291,204 @@ export class ChatService {
       );
     }
   }
+
+  async getChatUsers(userId: string, chatId: string) {
+    const chat = await this.chatModel.aggregate([
+      {
+        $match: {
+          _id: new Types.ObjectId(chatId),
+          participants: new Types.ObjectId(userId),
+        },
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'participants',
+          foreignField: '_id',
+          as: 'participants',
+        },
+      },
+      {
+        $addFields: {
+          participants: {
+            $map: {
+              input: '$participants',
+              as: 'participant',
+              in: {
+                $mergeObjects: [
+                  '$$participant',
+                  {
+                    isAdmin: {
+                      $in: ['$$participant._id', '$admins'],
+                    },
+                  },
+                ],
+              },
+            },
+          },
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          chatName: 1,
+          'participants._id': 1,
+          'participants.status': 1,
+          'participants.userName': 1,
+          'participants.profilehPoto': 1,
+          'participants.isAdmin': 1,
+        },
+      },
+      {
+        $addFields: {
+          participants: {
+            $sortArray: { input: '$participants', sortBy: { userName: 1 } },
+          },
+        },
+      },
+    ]);
+
+    if (
+      chat.length === 0 ||
+      chat[0].participants === null ||
+      chat[0].participants.length === 0
+    ) {
+      this.handleError('users not found', HttpStatus.NOT_FOUND);
+    }
+    return chat[0];
+  }
+
+  async addAdmin(
+    chatId: string,
+    userId: string,
+    currentUserId: string,
+  ): Promise<Chat> {
+    const chat = await this.chatModel.findById(chatId);
+
+    if (!chat) {
+      this.handleError('Chat not found', HttpStatus.NOT_FOUND);
+    }
+
+    // Check if current user is the creator or an admin
+    if (
+      // !chat.createdByUser.equals(currentUserId) &&
+      !chat.admins.some((adminId) => adminId.equals(currentUserId))
+    ) {
+      this.handleError(
+        'You are not the creator or an admin',
+        HttpStatus.FORBIDDEN,
+      );
+    }
+
+    // Check if user is a participant
+    if (
+      !chat.participants.some((participantId) => participantId.equals(userId))
+    ) {
+      this.handleError(
+        'User must be a participant to become admin',
+        HttpStatus.FORBIDDEN,
+      );
+    }
+
+    // Check if user is already an admin
+    if (chat.admins.some((adminId) => adminId.equals(userId))) {
+      this.handleError('User is already an admin', HttpStatus.FORBIDDEN);
+    }
+
+    // Add user to admins array
+    chat.admins.push(new Types.ObjectId(userId));
+    return chat.save();
+  }
+
+  async removeAdmin(
+    chatId: string,
+    userId: string,
+    currentUserId: string,
+  ): Promise<ChatDocument> {
+    const chat = await this.chatModel.findById(chatId);
+    if (!chat.admins.some((adminId) => adminId.equals(currentUserId))) {
+      this.handleError(
+        'You are not the creator or an admin',
+        HttpStatus.FORBIDDEN,
+      );
+    }
+    if (!chat) {
+      this.handleError('Chat not found', HttpStatus.NOT_FOUND);
+    }
+
+    // // Check if current user is the creator
+    // if (!chat.createdByUser.equals(currentUserId)) {
+    //   this.handleError('You are not the creator', HttpStatus.FORBIDDEN);
+    // }
+
+    // Cannot remove the creator from admins
+    if (chat.createdByUser.equals(userId)) {
+      this.handleError(
+        'Cannot remove the creator from admins',
+        HttpStatus.FORBIDDEN,
+      );
+    }
+
+    // Remove user from admins array
+    chat.admins = chat.admins.filter((adminId) => !adminId.equals(userId));
+    return chat.save();
+  }
+
+  async removeParticipant(
+    chatId: string,
+    userId: string,
+    currentUserId: string,
+  ) {
+    const chat = await this.chatModel.findById(chatId);
+
+    if (!chat) {
+      this.handleError('Chat not found', HttpStatus.NOT_FOUND);
+    }
+
+    if (!chat.admins.some((adminId) => adminId.equals(currentUserId))) {
+      this.handleError(
+        'You are not the creator or an admin',
+        HttpStatus.FORBIDDEN,
+      );
+    }
+
+    // Cannot remove the creator from admins
+    if (chat.createdByUser.equals(userId)) {
+      this.handleError(
+        'Cannot remove the creator from admins',
+        HttpStatus.FORBIDDEN,
+      );
+    }
+
+    chat.admins = chat.admins.filter((adminId) => !adminId.equals(userId));
+    chat.participants = chat.participants.filter(
+      (participantId) => !participantId.equals(userId),
+    );
+    return chat.save();
+  }
+
+  async addParticipant(chatId: string, userId: string, currentUserId: string) {
+    const chat = await this.chatModel.findById(chatId);
+
+    if (!chat) {
+      this.handleError('Chat not found', HttpStatus.NOT_FOUND);
+    }
+
+    if (!chat.admins.some((adminId) => adminId.equals(currentUserId))) {
+      this.handleError(
+        'You are not the creator or an admin',
+        HttpStatus.FORBIDDEN,
+      );
+    }
+
+    // Check if user is already an admin
+    if (
+      chat.participants.some((participantId) => participantId.equals(userId))
+    ) {
+      this.handleError('User is already an participant', HttpStatus.FORBIDDEN);
+    }
+
+    chat.participants.push(new Types.ObjectId(userId));
+    return chat.save();
+  }
 }

@@ -1,4 +1,11 @@
-import { Args, Mutation, Query, Resolver, Subscription } from '@nestjs/graphql';
+import {
+  Args,
+  ID,
+  Mutation,
+  Query,
+  Resolver,
+  Subscription,
+} from '@nestjs/graphql';
 import { ChatService } from './chat.service';
 import { Chat } from 'src/schemas/chat.schema';
 import { HttpStatus, Inject, UseGuards, UseInterceptors } from '@nestjs/common';
@@ -20,6 +27,7 @@ import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { SignUrlOutput } from 'src/types/object-types/SignUrlObject';
 import { SignUrlInput } from './dto/SignUrlInput';
 import { ChatMessages } from 'src/types/object-types/ChatMessage';
+import { GetChatUsersObject } from './dto/GetChatUsersObject';
 
 const ADD_MESSAGE = 'addMessageToChat';
 
@@ -117,5 +125,55 @@ export class ChatResolver {
     @CurrentUser() user: AuthUser,
   ) {
     return this.chatService.leaveChat(user._id, chatId);
+  }
+
+  @Query(() => GetChatUsersObject)
+  @UseGuards(AuthGuard)
+  async getChatUsers(
+    @Args('chatId') chatId: string,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.chatService.getChatUsers(user._id, chatId);
+  }
+
+  @Mutation(() => Chat)
+  @UseGuards(AuthGuard)
+  async addChatAdmin(
+    @Args('chatId', { type: () => String }) chatId: string,
+    @Args('userId', { type: () => String }) userId: string,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.chatService.addAdmin(chatId, userId, user._id);
+  }
+
+  @Mutation(() => Chat)
+  @UseGuards(AuthGuard)
+  async removeChatAdmin(
+    @Args('chatId', { type: () => String }) chatId: string,
+    @Args('userId', { type: () => String }) userId: string,
+    @CurrentUser() user: AuthUser,
+  ) {
+    console.log(chatId, userId);
+    return this.chatService.removeAdmin(chatId, userId, user._id);
+  }
+
+  @Mutation(() => Chat)
+  @UseGuards(AuthGuard)
+  async removeChatParticipant(
+    @Args('chatId', { type: () => String }) chatId: string,
+    @Args('userId', { type: () => String }) userId: string,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.chatService.removeParticipant(chatId, userId, user._id);
+  }
+
+  @Mutation(() => Chat)
+  @UseGuards(AuthGuard)
+  async addChatParticipant(
+    @Args('chatId', { type: () => String }) chatId: string,
+    @Args('userId', { type: () => String }) userId: string,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.chatService.addParticipant(chatId, userId, user._id);
   }
 }

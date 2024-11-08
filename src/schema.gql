@@ -248,6 +248,19 @@ type ChatMessages {
   messageIsReaded: Boolean!
 }
 
+type ChatParticipantObject {
+  _id: ID!
+  status: String
+  isAdmin: Boolean!
+  userName: String!
+  profilePhoto: String
+}
+
+type GetChatUsersObject {
+  _id: ID!
+  participants: [ChatParticipantObject!]!
+}
+
 type GetChatMessagesObject {
   messages: [ChatMessages!]!
   totalMessages: Float!
@@ -270,6 +283,7 @@ type Query {
   getAllTasksByProject(projectId: String!): GetAllTasksByProjectObject!
   getAllMyTasks: [Task!]!
   getChats: [GetUserChatsObject!]!
+  getChatUsers(chatId: String!): GetChatUsersObject!
   getChatMessages(input: GetChatMessagesInput!): GetChatMessagesObject!
   getMessageReaders(messageId: String!): Message!
 }
@@ -309,6 +323,10 @@ type Mutation {
   createChat(input: CreateChatInput!): Chat!
   generateSignedUploadUrl(input: SignUrlInput!): SignUrlOutput!
   leaveChat(chatId: String!): String!
+  addChatAdmin(chatId: String!, userId: String!): Chat!
+  removeChatAdmin(chatId: String!, userId: String!): Chat!
+  removeChatParticipant(chatId: String!, userId: String!): Chat!
+  addChatParticipant(chatId: String!, userId: String!): Chat!
   addMessageToChat(input: CreateMessageInput!): Message!
   markMessagesAsRead(messageIds: [String!]!): Boolean!
 }
