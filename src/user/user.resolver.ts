@@ -96,6 +96,6 @@ export class UserResolver {
     @Args('input') input: SearchUsersInput,
     @CurrentUser() user: AuthUser,
   ) {
-    return this.userService.searchUsers(input);
+    return this.userService.searchUsers(input,user._id);
   }
 }

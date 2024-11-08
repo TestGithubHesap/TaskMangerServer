@@ -1,7 +1,7 @@
 import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, PipelineStage } from 'mongoose';
-import { User, UserDocument } from 'src/schemas/user.schema';
+import { User, UserDocument, UserRole } from 'src/schemas/user.schema';
 import { UpdateUserInput } from './dto/updateUserInput';
 import { GraphQLError } from 'graphql';
 import { PUB_SUB } from 'src/modules/pubSub.module';
@@ -109,21 +109,32 @@ export class UserService {
     }
   }
 
-  async searchUsers({ searchText, page, limit }: SearchUsersInput) {
+  async searchUsers(
+    { searchText, page, limit }: SearchUsersInput,
+    currentUserId: string,
+  ) {
     try {
       const skip = (page - 1) * limit;
-      // company
+      const currentUser = await this.userModel.findById(currentUserId);
+      if (!currentUser) {
+        this.handleError('Cuurent user not found', HttpStatus.NOT_FOUND);
+      }
+      const isAdmin = currentUser.roles.includes(UserRole.ADMIN);
 
+      const baseMatchCondition = {
+        $or: [
+          { firstName: { $regex: searchText, $options: 'i' } },
+          { lastName: { $regex: searchText, $options: 'i' } },
+          { userName: { $regex: searchText, $options: 'i' } },
+        ],
+      };
+
+      if (!isAdmin) {
+        baseMatchCondition['company'] = currentUser.company.toString();
+      }
       const pipeline: PipelineStage[] = [
         {
-          $match: {
-            $or: [
-              { firstName: { $regex: searchText, $options: 'i' } },
-              { lastName: { $regex: searchText, $options: 'i' } },
-              { userName: { $regex: searchText, $options: 'i' } },
-              // { email: { $regex: query, $options: 'i' } },
-            ],
-          },
+          $match: baseMatchCondition,
         },
         { $skip: skip },
         { $limit: limit },
