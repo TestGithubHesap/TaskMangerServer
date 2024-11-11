@@ -186,4 +186,13 @@ export class ChatResolver {
   ) {
     return this.chatService.updateChatName(chatId, name, user._id);
   }
+
+  @Mutation(() => Chat)
+  @UseGuards(AuthGuard)
+  async freezeChat(
+    @Args('chatId', { type: () => String }) chatId: string,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.chatService.freezeChat(chatId, user._id);
+  }
 }

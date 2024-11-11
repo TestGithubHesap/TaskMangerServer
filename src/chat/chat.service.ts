@@ -49,6 +49,7 @@ export class ChatService {
         if (existingChat.isDeleted) {
           existingChat.isDeleted = false;
           existingChat.deletedAt = null;
+          existingChat.chatName = input.chatName;
           await existingChat.save();
         }
         return existingChat;
@@ -152,6 +153,7 @@ export class ChatService {
       {
         $match: {
           participants: new Types.ObjectId(userId),
+          isDeleted: false,
         },
       },
       {
@@ -505,6 +507,19 @@ export class ChatService {
       this.handleError('Chat not found', HttpStatus.NOT_FOUND);
     }
     chat.chatName = chatName;
+    return chat.save();
+  }
+
+  async freezeChat(chatId: string, currentUserId: string) {
+    const chat = await this.chatModel.findOne({
+      _id: chatId,
+      admins: { $in: [new Types.ObjectId(currentUserId)] },
+    });
+    if (!chat) {
+      this.handleError('Chat not found', HttpStatus.NOT_FOUND);
+    }
+    chat.isDeleted = true;
+    chat.deletedAt = new Date();
     return chat.save();
   }
 }

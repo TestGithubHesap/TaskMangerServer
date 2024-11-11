@@ -328,6 +328,7 @@ type Mutation {
   removeChatParticipant(chatId: String!, userId: String!): Chat!
   addChatParticipant(chatId: String!, userId: String!): Chat!
   updateChatName(chatId: String!, name: String!): Chat!
+  freezeChat(chatId: String!): Chat!
   addMessageToChat(input: CreateMessageInput!): Message!
   markMessagesAsRead(messageIds: [String!]!): Boolean!
 }
