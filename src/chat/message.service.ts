@@ -215,10 +215,26 @@ export class MessageService {
     const result = await this.messageModel.updateMany(
       {
         _id: { $in: messageIds },
-        isRead: { $ne: userId }, // Sadece henüz okunmamış mesajları güncelle
+        isRead: { $ne: new Types.ObjectId(userId) }, // Sadece henüz okunmamış mesajları güncelle
       },
       {
-        $addToSet: { isRead: userId },
+        $addToSet: { isRead: new Types.ObjectId(userId) },
+      },
+    );
+
+    return result.modifiedCount > 0;
+  }
+
+  async markChatMessagesAsRead(chatId: string, currentUserId: string) {
+    const result = await this.messageModel.updateMany(
+      {
+        chat: new Types.ObjectId(chatId),
+        isRead: {
+          $ne: new Types.ObjectId(currentUserId),
+        },
+      },
+      {
+        $addToSet: { isRead: new Types.ObjectId(currentUserId) },
       },
     );
 

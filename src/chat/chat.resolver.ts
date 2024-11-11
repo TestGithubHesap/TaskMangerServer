@@ -184,7 +184,7 @@ export class ChatResolver {
     @Args('name', { type: () => String }) name: string,
     @CurrentUser() user: AuthUser,
   ) {
-    return this.chatService.updateChatName(chatId, name, user._id);
+    return this.chatService.updateChatName(chatId, name, user._id, user.roles);
   }
 
   @Mutation(() => Chat)
@@ -193,6 +193,6 @@ export class ChatResolver {
     @Args('chatId', { type: () => String }) chatId: string,
     @CurrentUser() user: AuthUser,
   ) {
-    return this.chatService.freezeChat(chatId, user._id);
+    return this.chatService.freezeChat(chatId, user._id, user.roles);
   }
 }

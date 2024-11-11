@@ -72,4 +72,13 @@ export class MessageResolver {
   ) {
     return this.messageService.getMessageReaders(user._id, messageId);
   }
+
+  @Mutation(() => Boolean)
+  @UseGuards(AuthGuard)
+  async markChatMessagesAsRead(
+    @Args('chatId', { type: () => String }) chatId: string,
+    @CurrentUser() user: AuthUser,
+  ): Promise<boolean> {
+    return this.messageService.markChatMessagesAsRead(chatId, user._id);
+  }
 }

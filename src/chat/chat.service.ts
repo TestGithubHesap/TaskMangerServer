@@ -498,10 +498,15 @@ export class ChatService {
     chatId: string,
     chatName: string,
     currentUserId: string,
+    userRoles: UserRole[],
   ) {
+    const isAdmin = userRoles.includes(UserRole.ADMIN);
     const chat = await this.chatModel.findOne({
       _id: chatId,
-      admins: { $in: [new Types.ObjectId(currentUserId)] },
+      $or: [
+        { admins: { $in: [new Types.ObjectId(currentUserId)] } },
+        ...(isAdmin ? [{}] : []),
+      ],
     });
     if (!chat) {
       this.handleError('Chat not found', HttpStatus.NOT_FOUND);
@@ -510,10 +515,18 @@ export class ChatService {
     return chat.save();
   }
 
-  async freezeChat(chatId: string, currentUserId: string) {
+  async freezeChat(
+    chatId: string,
+    currentUserId: string,
+    userRoles: UserRole[],
+  ) {
+    const isAdmin = userRoles.includes(UserRole.ADMIN);
     const chat = await this.chatModel.findOne({
       _id: chatId,
-      admins: { $in: [new Types.ObjectId(currentUserId)] },
+      $or: [
+        { admins: { $in: [new Types.ObjectId(currentUserId)] } },
+        ...(isAdmin ? [{}] : []),
+      ],
     });
     if (!chat) {
       this.handleError('Chat not found', HttpStatus.NOT_FOUND);
