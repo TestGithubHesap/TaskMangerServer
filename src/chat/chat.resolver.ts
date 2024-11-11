@@ -176,4 +176,14 @@ export class ChatResolver {
   ) {
     return this.chatService.addParticipant(chatId, userId, user._id);
   }
+
+  @Mutation(() => Chat)
+  @UseGuards(AuthGuard)
+  async updateChatName(
+    @Args('chatId', { type: () => String }) chatId: string,
+    @Args('name', { type: () => String }) name: string,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.chatService.updateChatName(chatId, name, user._id);
+  }
 }

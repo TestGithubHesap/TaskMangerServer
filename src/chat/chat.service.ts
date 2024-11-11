@@ -491,4 +491,20 @@ export class ChatService {
     chat.participants.push(new Types.ObjectId(userId));
     return chat.save();
   }
+
+  async updateChatName(
+    chatId: string,
+    chatName: string,
+    currentUserId: string,
+  ) {
+    const chat = await this.chatModel.findOne({
+      _id: chatId,
+      admins: { $in: [new Types.ObjectId(currentUserId)] },
+    });
+    if (!chat) {
+      this.handleError('Chat not found', HttpStatus.NOT_FOUND);
+    }
+    chat.chatName = chatName;
+    return chat.save();
+  }
 }
