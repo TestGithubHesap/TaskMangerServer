@@ -64,10 +64,10 @@ export class AuthResolver {
   @Query(() => User)
   @UseGuards(AuthGuard)
   async getMe(@CurrentUser() user: AuthUser) {
-    console.log('hell');
-    if (!user) {
-      this.handleError('user not found', HttpStatus.NOT_FOUND);
-    }
+    // // console.log('hell');
+    // if (!user) {
+    //   this.handleError('user not found', HttpStatus.NOT_FOUND);
+    // }
 
     const data = this.authService.getMe(user._id);
     return data;

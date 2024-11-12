@@ -130,4 +130,36 @@ export class CompanyResolver {
       user.roles,
     );
   }
+
+  @Mutation(() => User)
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(UserRole.EXECUTIVE, UserRole.ADMIN)
+  async promoteToExecutive(
+    @Args('companyId', { nullable: true }) companyId: string | null,
+    @Args('userId') userId: string,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.companyService.promoteToExecutive(
+      companyId,
+      userId,
+      user._id,
+      user.roles,
+    );
+  }
+
+  @Mutation(() => User)
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(UserRole.EXECUTIVE, UserRole.ADMIN)
+  async demoteFromExecutive(
+    @Args('companyId', { nullable: true }) companyId: string | null,
+    @Args('userId') userId: string,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.companyService.demoteFromExecutive(
+      companyId,
+      userId,
+      user._id,
+      user.roles,
+    );
+  }
 }

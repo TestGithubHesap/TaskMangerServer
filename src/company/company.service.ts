@@ -233,31 +233,111 @@ export class CompanyService {
     currentUserId: string,
     userRoles: UserRole[],
   ) {
-    // Find user and validate existence
     const user = await this.userModel.findById(currentUserId);
+    if (!user) {
+      this.handleError('User not found.', HttpStatus.NOT_FOUND);
+    }
+
+    // Kullanıcı rolünü kontrol et
     const isAdmin = userRoles.includes(UserRole.ADMIN);
     const isExecutive = userRoles.includes(UserRole.EXECUTIVE);
-    if (companyId) {
-      if (isAdmin || (isExecutive && user.company.toString() == companyId)) {
-        const users = await this.userModel
-          .find({
-            company: companyId,
-          })
-          .select('_id firstName lastName userName profilePhoto roles');
-        return users;
-      }
+
+    // Erişim iznini doğrula
+    const targetCompanyId = companyId || user.company?.toString();
+    if (
+      !isAdmin &&
+      (!isExecutive || user.company?.toString() !== targetCompanyId)
+    ) {
       this.handleError(
         'You do not have authorization to perform this operation.',
         HttpStatus.UNAUTHORIZED,
       );
-    } else {
-      const users = await this.userModel
-        .find({
-          company: user.company,
-        })
-        .select('_id firstName lastName userName profilePhoto roles');
-
-      return users;
     }
+
+    // Belirtilen şirket ID'sine ait kullanıcıları getir
+    return await this.userModel
+      .find({ company: targetCompanyId })
+      .select('_id firstName lastName userName profilePhoto roles');
+  }
+
+  async promoteToExecutive(
+    companyId: string | null,
+    userId: string,
+    currentUserId: string,
+    userRoles: UserRole[],
+  ) {
+    const [currentUser, user] = await Promise.all([
+      this.userModel.findById(currentUserId),
+      this.userModel.findById(userId),
+    ]);
+    if (!currentUser || !user) {
+      this.handleError('User not found.', HttpStatus.NOT_FOUND);
+    }
+
+    const isAdmin = currentUser.roles.includes(UserRole.ADMIN);
+    // const isExecutive = currentUser.roles.includes(UserRole.EXECUTIVE);
+    const targetCompanyId = companyId || currentUser.company?.toString();
+
+    if (!isAdmin && currentUser.company?.toString() !== targetCompanyId) {
+      this.handleError(
+        'You do not have authorization to perform this operation.',
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+
+    if (!isAdmin && user.company?.toString() !== targetCompanyId) {
+      this.handleError(
+        'The specified user does not belong to the given company.',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    if (!user.roles.includes(UserRole.EXECUTIVE)) {
+      user.roles.push(UserRole.EXECUTIVE);
+      await user.save();
+    }
+
+    return user;
+  }
+
+  async demoteFromExecutive(
+    companyId: string | null,
+    userId: string,
+    currentUserId: string,
+    userRoles: UserRole[],
+  ) {
+    const [currentUser, user] = await Promise.all([
+      this.userModel.findById(currentUserId),
+      this.userModel.findById(userId),
+    ]);
+    if (!currentUser || !user) {
+      this.handleError('User not found.', HttpStatus.NOT_FOUND);
+    }
+
+    const isAdmin = currentUser.roles.includes(UserRole.ADMIN);
+    // const isExecutive = currentUser.roles.includes(UserRole.EXECUTIVE);
+    const targetCompanyId = companyId || currentUser.company?.toString();
+
+    if (!isAdmin && currentUser.company?.toString() !== targetCompanyId) {
+      this.handleError(
+        'You do not have authorization to perform this operation.',
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+
+    if (!isAdmin && user.company?.toString() !== targetCompanyId) {
+      this.handleError(
+        'The specified user does not belong to the given company.',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    if (!user.roles.includes(UserRole.EXECUTIVE)) {
+      return user;
+    }
+
+    user.roles = user.roles.filter((role) => role !== UserRole.EXECUTIVE);
+    await user.save();
+
+    return user;
   }
 }
