@@ -11,4 +11,7 @@ export class CompanyWithButton {
 
   @Field(() => Boolean, { nullable: true })
   isJoinRequest?: boolean;
+
+  @Field(() => Boolean)
+  isCompanyEmploye: boolean;
 }

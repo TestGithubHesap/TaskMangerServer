@@ -32,7 +32,7 @@ export class MessageResolver {
 
   @Mutation(() => Message)
   @UseGuards(AuthGuard, RolesGuard)
-  @Roles(UserRole.WORKER)
+  @Roles(UserRole.WORKER, UserRole.USER)
   async addMessageToChat(
     @Args('input') input: CreateMessageInput,
     @CurrentUser() user: AuthUser,

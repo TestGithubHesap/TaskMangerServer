@@ -39,6 +39,7 @@ export class CompanyService {
     companyId: string | null,
   ): Promise<{
     company: Company;
+    isCompanyEmploye: boolean;
     showCompanyjoinButton: boolean;
     isJoinRequest?: boolean;
   }> {
@@ -60,6 +61,7 @@ export class CompanyService {
       });
       return {
         company,
+        isCompanyEmploye: user.company == company._id,
         showCompanyjoinButton: !user.company,
         isJoinRequest: !!companyJoinReques,
       };
@@ -71,6 +73,7 @@ export class CompanyService {
     }
     return {
       company,
+      isCompanyEmploye: user.company == company._id,
       showCompanyjoinButton: false,
       isJoinRequest: false,
     };
@@ -223,5 +226,38 @@ export class CompanyService {
       .populate(populateConfig)
       .lean()
       .exec();
+  }
+
+  async getCompanyEmployees(
+    companyId: string | null,
+    currentUserId: string,
+    userRoles: UserRole[],
+  ) {
+    // Find user and validate existence
+    const user = await this.userModel.findById(currentUserId);
+    const isAdmin = userRoles.includes(UserRole.ADMIN);
+    const isExecutive = userRoles.includes(UserRole.EXECUTIVE);
+    if (companyId) {
+      if (isAdmin || (isExecutive && user.company.toString() == companyId)) {
+        const users = await this.userModel
+          .find({
+            company: companyId,
+          })
+          .select('_id firstName lastName userName profilePhoto roles');
+        return users;
+      }
+      this.handleError(
+        'You do not have authorization to perform this operation.',
+        HttpStatus.UNAUTHORIZED,
+      );
+    } else {
+      const users = await this.userModel
+        .find({
+          company: user.company,
+        })
+        .select('_id firstName lastName userName profilePhoto roles');
+
+      return users;
+    }
   }
 }

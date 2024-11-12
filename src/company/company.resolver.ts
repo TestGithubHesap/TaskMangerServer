@@ -7,7 +7,7 @@ import { HttpStatus, UseGuards, UseInterceptors } from '@nestjs/common';
 import { AuthGuard } from 'src/common/guards/auth.guard';
 import { RolesGuard } from 'src/common/guards/role.guard';
 import { Roles } from 'src/common/decorators/roles.decorator';
-import { UserRole } from 'src/schemas/user.schema';
+import { User, UserRole } from 'src/schemas/user.schema';
 import { CurrentUser } from 'src/common/decorators/user.decorator';
 import { User as AuthUser } from '../types/user';
 import { GraphQLError } from 'graphql';
@@ -46,6 +46,7 @@ export class CompanyResolver {
     @CurrentUser() user: AuthUser,
   ): Promise<{
     company: Company;
+    isCompanyEmploye: boolean;
     showCompanyjoinButton: boolean;
     isJoinRequest?: boolean;
   }> {
@@ -113,6 +114,20 @@ export class CompanyResolver {
       requestId,
       user._id,
       approve,
+    );
+  }
+
+  @Query(() => [User])
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(UserRole.EXECUTIVE, UserRole.ADMIN)
+  async getCompanyEmployees(
+    @Args('companyId', { nullable: true }) companyId: string | null,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.companyService.getCompanyEmployees(
+      companyId,
+      user._id,
+      user.roles,
     );
   }
 }

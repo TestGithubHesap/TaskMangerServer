@@ -78,6 +78,7 @@ type CompanyWithButton {
   company: Company!
   showCompanyjoinButton: Boolean!
   isJoinRequest: Boolean
+  isCompanyEmploye: Boolean!
 }
 
 type Project {
@@ -276,6 +277,7 @@ type Query {
   getCompany(companyId: String!): Company!
   getCompanyByUser(companyId: String): CompanyWithButton!
   getCompanyJoinRequests(companyId: String, status: JoinRequestStatus!): [CompanyJoinRequest!]!
+  getCompanyEmployees(companyId: String): [User!]!
   getAllProjectsByCompany: [Project!]!
   getProjectsByCompany: [Project!]!
   getProjectWithDetails(projectId: String!): Project!

@@ -174,7 +174,7 @@ export class MessageService {
         $addFields: {
           messageIsReaded: {
             $cond: {
-              if: { $in: [userId, '$isRead'] },
+              if: { $in: [new Types.ObjectId(userId), '$isRead'] },
               then: true,
               else: false,
             },

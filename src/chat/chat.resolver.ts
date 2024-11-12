@@ -66,7 +66,7 @@ export class ChatResolver {
   }
 
   @UseGuards(AuthGuard, RolesGuard)
-  @Roles(UserRole.WORKER)
+  @Roles(UserRole.WORKER, UserRole.USER)
   @Subscription(() => ChatMessages, {
     filter: async function (payload, variables, context) {
       const { req, res } = context;
