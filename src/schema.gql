@@ -81,6 +81,11 @@ type CompanyWithButton {
   isCompanyEmploye: Boolean!
 }
 
+type SearchCompaniesObject {
+  companies: [Company!]!
+  totalCount: Float!
+}
+
 type Project {
   _id: ID!
   name: String!
@@ -278,6 +283,7 @@ type Query {
   getCompanyByUser(companyId: String): CompanyWithButton!
   getCompanyJoinRequests(companyId: String, status: JoinRequestStatus!): [CompanyJoinRequest!]!
   getCompanyEmployees(companyId: String): [User!]!
+  searchCompanies(input: SearchCompaniesInput!): SearchCompaniesObject!
   getAllProjectsByCompany: [Project!]!
   getProjectsByCompany: [Project!]!
   getProjectWithDetails(projectId: String!): Project!
@@ -291,6 +297,12 @@ type Query {
 }
 
 input SearchUsersInput {
+  searchText: String!
+  page: Float! = 1
+  limit: Float! = 10
+}
+
+input SearchCompaniesInput {
   searchText: String!
   page: Float! = 1
   limit: Float! = 10

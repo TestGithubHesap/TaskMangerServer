@@ -7,8 +7,8 @@ import { GraphQLError } from 'graphql';
 import { PUB_SUB } from 'src/modules/pubSub.module';
 import { RedisPubSub } from 'graphql-redis-subscriptions';
 import { SearchUsersInput } from './dto/searchUsersInput';
-interface AggregationResult {
-  paginatedResults: User[];
+interface AggregationResult<T> {
+  paginatedResults: T[];
   totalCount: { count: number }[];
 }
 @Injectable()
@@ -168,7 +168,7 @@ export class UserService {
         },
       ];
 
-      const results = await this.userModel.aggregate<AggregationResult>([
+      const results = await this.userModel.aggregate<AggregationResult<User>>([
         ...pipeline,
         {
           $facet: {

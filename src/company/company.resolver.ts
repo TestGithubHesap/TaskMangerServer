@@ -17,6 +17,8 @@ import {
 } from 'src/schemas/companyJoinRequest.schema';
 import { GraphQLErrorInterceptor } from 'src/common/interceptors/graphql-error.interceptor';
 import { CompanyWithButton } from './dto/CompanyWithButton';
+import { SearchCompaniesInput } from './dto/searchCompaniesInput';
+import { SearchCompaniesObject } from 'src/types/object-types/SearchCompaniesObject';
 @Resolver('Company')
 @UseInterceptors(GraphQLErrorInterceptor)
 export class CompanyResolver {
@@ -161,5 +163,14 @@ export class CompanyResolver {
       user._id,
       user.roles,
     );
+  }
+
+  @Query(() => SearchCompaniesObject)
+  @UseGuards(AuthGuard)
+  async searchCompanies(
+    @Args('input') input: SearchCompaniesInput,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.companyService.searchCompanies(input, user._id);
   }
 }

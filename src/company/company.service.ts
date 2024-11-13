@@ -1,6 +1,6 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, PipelineStage } from 'mongoose';
 import { Company, CompanyDocument } from 'src/schemas/company.schema';
 import { CreateCompanyInput } from './dto/createCompany.nput';
 import {
@@ -10,7 +10,12 @@ import {
 } from 'src/schemas/companyJoinRequest.schema';
 import { GraphQLError } from 'graphql';
 import { User, UserDocument, UserRole } from 'src/schemas/user.schema';
-
+import { SearchCompaniesInput } from './dto/searchCompaniesInput';
+import { skipLast } from 'rxjs';
+interface AggregationResult<T> {
+  paginatedResults: T[];
+  totalCount: { count: number }[];
+}
 @Injectable()
 export class CompanyService {
   constructor(
@@ -339,5 +344,58 @@ export class CompanyService {
     await user.save();
 
     return user;
+  }
+
+  async searchCompanies(
+    { searchText, page, limit }: SearchCompaniesInput,
+    currentUserId: string,
+  ) {
+    const skip = (page - 1) * limit;
+    const baseMatchCondition = {
+      $or: [
+        { name: { $regex: searchText, $options: 'i' } },
+        { phoneNumber: { $regex: searchText, $options: 'i' } },
+      ],
+    };
+    const pipeline: PipelineStage[] = [
+      {
+        $match: baseMatchCondition,
+      },
+    ];
+
+    const results = await this.companyModel.aggregate<
+      AggregationResult<Company>
+    >([
+      ...pipeline,
+      {
+        $facet: {
+          paginatedResults: [
+            {
+              $project: {
+                _id: 1,
+                name: 1,
+                createdAt: 1,
+              },
+            },
+            {
+              $skip: skip,
+            },
+            {
+              $limit: limit,
+            },
+          ],
+          totalCount: [
+            {
+              $count: 'count',
+            },
+          ],
+        },
+      },
+    ]);
+
+    const companies = results[0].paginatedResults;
+    const totalCount = results[0].totalCount[0]?.count || 0;
+
+    return { companies, totalCount };
   }
 }
