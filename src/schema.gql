@@ -462,6 +462,7 @@ input MediaContentInput {
 
 type Subscription {
   changeUserStatus(userId: String!): ChangeUserStatusObject!
+  changeUserRole: User!
   createCompanyProject(companyId: String!): Project!
   addMessageToChat(chatId: String!): ChatMessages!
 }

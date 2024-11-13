@@ -1,4 +1,4 @@
-import { HttpStatus, Injectable } from '@nestjs/common';
+import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, PipelineStage } from 'mongoose';
 import { Company, CompanyDocument } from 'src/schemas/company.schema';
@@ -12,10 +12,13 @@ import { GraphQLError } from 'graphql';
 import { User, UserDocument, UserRole } from 'src/schemas/user.schema';
 import { SearchCompaniesInput } from './dto/searchCompaniesInput';
 import { skipLast } from 'rxjs';
+import { PUB_SUB } from 'src/modules/pubSub.module';
+import { RedisPubSub } from 'graphql-redis-subscriptions';
 interface AggregationResult<T> {
   paginatedResults: T[];
   totalCount: { count: number }[];
 }
+const CHANGE_USER_ROLE = 'changeUserRole';
 @Injectable()
 export class CompanyService {
   constructor(
@@ -23,6 +26,7 @@ export class CompanyService {
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectModel(CompanyJoinRequest.name)
     private companyJoinRequestModel: Model<CompanyJoinRequestDocument>,
+    @Inject(PUB_SUB) private readonly pubSub: RedisPubSub,
   ) {}
   private handleError(
     message: string,
@@ -300,6 +304,9 @@ export class CompanyService {
     if (!user.roles.includes(UserRole.EXECUTIVE)) {
       user.roles.push(UserRole.EXECUTIVE);
       await user.save();
+      this.pubSub.publish(CHANGE_USER_ROLE, {
+        changeUserRole: user,
+      });
     }
 
     return user;
@@ -341,8 +348,11 @@ export class CompanyService {
     }
 
     user.roles = user.roles.filter((role) => role !== UserRole.EXECUTIVE);
-    await user.save();
 
+    await user.save();
+    this.pubSub.publish(CHANGE_USER_ROLE, {
+      changeUserRole: user,
+    });
     return user;
   }
 
@@ -420,6 +430,16 @@ export class CompanyService {
       );
     }
     user.company = null;
+    user.roles = user.roles.filter((role) =>
+      [UserRole.ADMIN, UserRole.USER].includes(role),
+    );
+
+    this.pubSub.publish(CHANGE_USER_ROLE, {
+      changeUserRole: {
+        _id: user.id,
+        roles: user.roles,
+      },
+    });
     return user.save();
   }
 }

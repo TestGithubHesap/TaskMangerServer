@@ -14,6 +14,7 @@ import { RedisPubSub } from 'graphql-redis-subscriptions';
 import { SearchUsersInput } from './dto/searchUsersInput';
 import { SearchUsersObject } from 'src/types/object-types/SearchUsersObject';
 const CHANGE_USER_STATUS = 'changeUserStatus';
+const CHANGE_USER_ROLE = 'changeUserRole';
 @Resolver('User')
 @UseInterceptors(GraphQLErrorInterceptor)
 export class UserResolver {
@@ -96,6 +97,22 @@ export class UserResolver {
     @Args('input') input: SearchUsersInput,
     @CurrentUser() user: AuthUser,
   ) {
-    return this.userService.searchUsers(input,user._id);
+    return this.userService.searchUsers(input, user._id);
+  }
+
+  @UseGuards(AuthGuard)
+  @Subscription(() => User, {
+    filter: async function (payload, variables, context) {
+      const { req, res } = context;
+      const user = req?.user as AuthUser;
+      if (!user) {
+        this.handleError('user not found', HttpStatus.NOT_FOUND);
+      }
+
+      return payload.changeUserRole._id == user._id;
+    },
+  })
+  changeUserRole(@CurrentUser() user: AuthUser) {
+    return this.pubSub.asyncIterator(CHANGE_USER_ROLE);
   }
 }
