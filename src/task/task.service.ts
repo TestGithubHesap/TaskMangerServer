@@ -55,7 +55,16 @@ export class TaskService {
         HttpStatus.UNAUTHORIZED,
       );
     }
-
+    if (task.assignee.toString() !== updateData.assignee) {
+      const project = await this.projectModel.findById(task.project._id);
+      if (!project) {
+        this.handleError('User not found', HttpStatus.NOT_FOUND);
+      }
+      if (!project.team.includes(new Types.ObjectId(updateData.assignee))) {
+        project.team.push(new Types.ObjectId(updateData.assignee));
+        await project.save();
+      }
+    }
     // `updateData` içindeki sadece gönderilen alanları günceller
     Object.keys(updateData).forEach((key) => {
       if (updateData[key] !== undefined) {

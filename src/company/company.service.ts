@@ -398,4 +398,28 @@ export class CompanyService {
 
     return { companies, totalCount };
   }
+
+  async removeEmployee(userId: string, currentUserId: string) {
+    const [currentUser, user] = await Promise.all([
+      this.userModel.findById(currentUserId),
+      this.userModel.findById(userId),
+    ]);
+    if (!currentUser || !user) {
+      this.handleError('User not found.', HttpStatus.NOT_FOUND);
+    }
+
+    const isAdmin = currentUser.roles.includes(UserRole.ADMIN);
+
+    if (
+      !isAdmin &&
+      currentUser.company?.toString() !== user.company?.toString()
+    ) {
+      this.handleError(
+        'You do not have authorization to perform this operation.',
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+    user.company = null;
+    return user.save();
+  }
 }

@@ -173,4 +173,14 @@ export class CompanyResolver {
   ) {
     return this.companyService.searchCompanies(input, user._id);
   }
+
+  @Mutation(() => User)
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(UserRole.EXECUTIVE, UserRole.ADMIN)
+  async removeEmployee(
+    @Args('userId') userId: string,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.companyService.removeEmployee(userId, user._id);
+  }
 }

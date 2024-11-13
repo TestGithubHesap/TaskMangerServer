@@ -330,6 +330,7 @@ type Mutation {
   respondToJoinRequest(requestId: String!, approve: Boolean!): CompanyJoinRequest!
   promoteToExecutive(companyId: String, userId: String!): User!
   demoteFromExecutive(companyId: String, userId: String!): User!
+  removeEmployee(userId: String!): User!
   createProject(input: CreateProjectInput!): Project!
   createTask(input: CreateTaskInput!): Task!
   updateTaskHierarchy(input: UpdateTaskHierarchyInput!): Task!
