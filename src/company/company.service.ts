@@ -1,6 +1,6 @@
 import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, PipelineStage } from 'mongoose';
+import { Model, PipelineStage, Types } from 'mongoose';
 import { Company, CompanyDocument } from 'src/schemas/company.schema';
 import { CreateCompanyInput } from './dto/createCompany.nput';
 import {
@@ -14,6 +14,12 @@ import { SearchCompaniesInput } from './dto/searchCompaniesInput';
 import { skipLast } from 'rxjs';
 import { PUB_SUB } from 'src/modules/pubSub.module';
 import { RedisPubSub } from 'graphql-redis-subscriptions';
+import {
+  CompanyRequest,
+  CompanyRequestDocument,
+  CompanyRequestStatus,
+} from 'src/schemas/companyRequest.schema';
+import { CreateCompanyRequestInput } from './dto/CreateCompanyRequestInput';
 interface AggregationResult<T> {
   paginatedResults: T[];
   totalCount: { count: number }[];
@@ -26,6 +32,8 @@ export class CompanyService {
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectModel(CompanyJoinRequest.name)
     private companyJoinRequestModel: Model<CompanyJoinRequestDocument>,
+    @InjectModel(CompanyRequest.name)
+    private companyRequestModel: Model<CompanyRequestDocument>,
     @Inject(PUB_SUB) private readonly pubSub: RedisPubSub,
   ) {}
   private handleError(
@@ -441,5 +449,67 @@ export class CompanyService {
       },
     });
     return user.save();
+  }
+
+  async createCompanyRequest(
+    input: CreateCompanyRequestInput,
+    currentUserId: string,
+  ) {
+    const { name, address, phoneNumber, website, description } = input;
+
+    const existingCompany = await this.companyModel.findOne({ name });
+    if (existingCompany) {
+      this.handleError(
+        'A company with this name already exists',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const newRequest = await this.companyRequestModel.create({
+      user: new Types.ObjectId(currentUserId),
+      name,
+      address,
+      phoneNumber,
+      website,
+      description,
+    });
+
+    return newRequest;
+  }
+
+  async rejectCompanyRequest(requestId: string, reason: string | null) {
+    const request = await this.companyRequestModel.findById(requestId);
+    if (!request) {
+      this.handleError('Company request not found', HttpStatus.NOT_FOUND);
+    }
+
+    request.status = CompanyRequestStatus.REJECTED;
+    request.rejectionReason = reason;
+    return request.save();
+  }
+  async approveCompanyRequest(requestId: string) {
+    const request = await this.companyRequestModel.findById(requestId);
+    if (!request) {
+      this.handleError('Company request not found', HttpStatus.NOT_FOUND);
+    }
+
+    if (request.status !== 'pending') {
+      this.handleError('Request is not pending', HttpStatus.BAD_REQUEST);
+    }
+
+    // Şirket kaydını oluştur
+    const newCompany = await this.companyModel.create({
+      name: request.name,
+      address: request.address,
+      phoneNumber: request.phoneNumber,
+      website: request.website,
+      owner: request.user,
+    });
+
+    // Talep durumunu güncelle
+    request.status = CompanyRequestStatus.APPROVED;
+    await request.save();
+
+    return newCompany;
   }
 }

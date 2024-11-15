@@ -19,6 +19,8 @@ import { GraphQLErrorInterceptor } from 'src/common/interceptors/graphql-error.i
 import { CompanyWithButton } from './dto/CompanyWithButton';
 import { SearchCompaniesInput } from './dto/searchCompaniesInput';
 import { SearchCompaniesObject } from 'src/types/object-types/SearchCompaniesObject';
+import { CompanyRequest } from 'src/schemas/companyRequest.schema';
+import { CreateCompanyRequestInput } from './dto/CreateCompanyRequestInput';
 @Resolver('Company')
 @UseInterceptors(GraphQLErrorInterceptor)
 export class CompanyResolver {
@@ -182,5 +184,31 @@ export class CompanyResolver {
     @CurrentUser() user: AuthUser,
   ) {
     return this.companyService.removeEmployee(userId, user._id);
+  }
+
+  @Mutation(() => CompanyRequest)
+  @UseGuards(AuthGuard)
+  async createCompanyRequest(
+    @Args('input') input: CreateCompanyRequestInput,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.companyService.createCompanyRequest(input, user._id);
+  }
+
+  @Mutation(() => CompanyRequest)
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  async rejectCompanyRequest(
+    @Args('requestId') requestId: string,
+    @Args('reason', { nullable: true }) reason: string | null,
+  ) {
+    return this.companyService.rejectCompanyRequest(requestId, reason);
+  }
+
+  @Mutation(() => Company)
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  async approveCompanyRequest(@Args('requestId') requestId: string) {
+    return this.companyService.approveCompanyRequest(requestId);
   }
 }

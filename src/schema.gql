@@ -4,6 +4,7 @@
 
 type Company {
   _id: ID!
+  owner: User!
   name: String!
   address: String
   phoneNumber: String
@@ -68,6 +69,26 @@ type CompanyJoinRequest {
 
 """Status of the company join request"""
 enum JoinRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELED
+}
+
+type CompanyRequest {
+  _id: ID!
+  user: User!
+  name: String!
+  address: String
+  phoneNumber: String
+  website: String
+  description: String!
+  status: CompanyRequestStatus!
+  rejectionReason: String
+}
+
+"""Status of the company  request"""
+enum CompanyRequestStatus {
   PENDING
   APPROVED
   REJECTED
@@ -331,6 +352,9 @@ type Mutation {
   promoteToExecutive(companyId: String, userId: String!): User!
   demoteFromExecutive(companyId: String, userId: String!): User!
   removeEmployee(userId: String!): User!
+  createCompanyRequest(input: CreateCompanyRequestInput!): CompanyRequest!
+  rejectCompanyRequest(requestId: String!, reason: String): CompanyRequest!
+  approveCompanyRequest(requestId: String!): Company!
   createProject(input: CreateProjectInput!): Project!
   createTask(input: CreateTaskInput!): Task!
   updateTaskHierarchy(input: UpdateTaskHierarchyInput!): Task!
@@ -393,6 +417,14 @@ input CreateCompanyInput {
   address: String
   phoneNumber: String
   website: String
+}
+
+input CreateCompanyRequestInput {
+  name: String!
+  address: String
+  phoneNumber: String
+  website: String
+  description: String!
 }
 
 input CreateProjectInput {

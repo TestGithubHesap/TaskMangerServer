@@ -9,6 +9,10 @@ import {
   CompanyJoinRequest,
   CompanyJoinRequestSchema,
 } from 'src/schemas/companyJoinRequest.schema';
+import {
+  CompanyRequest,
+  CompanyRequestSchema,
+} from 'src/schemas/companyRequest.schema';
 
 @Module({
   imports: [
@@ -17,6 +21,7 @@ import {
       { name: User.name, schema: UserSchema },
       { name: Company.name, schema: CompanySchema },
       { name: CompanyJoinRequest.name, schema: CompanyJoinRequestSchema },
+      { name: CompanyRequest.name, schema: CompanyRequestSchema },
     ]),
   ],
   providers: [CompanyService, CompanyResolver],
