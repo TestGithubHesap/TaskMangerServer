@@ -1,4 +1,11 @@
-import { Args, Mutation, Query, Resolver, Subscription } from '@nestjs/graphql';
+import {
+  Args,
+  Context,
+  Mutation,
+  Query,
+  Resolver,
+  Subscription,
+} from '@nestjs/graphql';
 import { UserService } from './user.service';
 import { User, UserRole } from 'src/schemas/user.schema';
 import { UpdateUserInput } from './dto/updateUserInput';
@@ -13,6 +20,8 @@ import { PUB_SUB } from 'src/modules/pubSub.module';
 import { RedisPubSub } from 'graphql-redis-subscriptions';
 import { SearchUsersInput } from './dto/searchUsersInput';
 import { SearchUsersObject } from 'src/types/object-types/SearchUsersObject';
+import { Request, Response } from 'express';
+import { AuthService } from 'src/auth/auth.service';
 const CHANGE_USER_STATUS = 'changeUserStatus';
 const CHANGE_USER_ROLE = 'changeUserRole';
 @Resolver('User')
@@ -20,6 +29,7 @@ const CHANGE_USER_ROLE = 'changeUserRole';
 export class UserResolver {
   constructor(
     private readonly userService: UserService,
+    private readonly authService: AuthService,
     @Inject(PUB_SUB) private readonly pubSub: RedisPubSub,
   ) {}
   private handleError(
@@ -112,7 +122,10 @@ export class UserResolver {
       return payload.changeUserRole._id == user._id;
     },
   })
-  changeUserRole(@CurrentUser() user: AuthUser) {
+  async changeUserRole(
+    @CurrentUser() user: AuthUser,
+    @Context() context: { req: Request; res: Response },
+  ) {
     return this.pubSub.asyncIterator(CHANGE_USER_ROLE);
   }
 }

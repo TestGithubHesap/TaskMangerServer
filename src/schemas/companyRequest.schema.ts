@@ -57,6 +57,12 @@ export class CompanyRequest {
   @Prop()
   @Field({ nullable: true })
   rejectionReason?: string; // Reddetme sebebi (eğer varsa)
+
+  @Field()
+  createdAt: string;
+
+  @Field()
+  updatedAt: string;
 }
 
 export const CompanyRequestSchema =

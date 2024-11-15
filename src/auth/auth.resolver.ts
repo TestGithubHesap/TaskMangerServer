@@ -9,7 +9,7 @@ import { GraphQLErrorInterceptor } from 'src/common/interceptors/graphql-error.i
 import { LoginUserObject } from 'src/types/object-types/LoginUserObject';
 import { LoginUserInput } from './dto/LoginUserInput';
 import { AuthGuard } from '../common/guards/auth.guard';
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { CurrentUser } from 'src/common/decorators/user.decorator';
 import { User as AuthUser } from '../types/user';
 import { GraphQLError } from 'graphql';
@@ -63,14 +63,20 @@ export class AuthResolver {
 
   @Query(() => User)
   @UseGuards(AuthGuard)
-  async getMe(@CurrentUser() user: AuthUser) {
-    // // console.log('hell');
-    // if (!user) {
-    //   this.handleError('user not found', HttpStatus.NOT_FOUND);
-    // }
+  async getMe(
+    @CurrentUser() user: AuthUser,
+    @Context() context: { req: Request; res: Response },
+  ) {
+    const { req, res } = context;
+    try {
+      const refreshToken = req.cookies['refresh_token']; // Cookie adını buraya yazın
+      const { access_token, user } =
+        await this.authService.refreshAccessToken(refreshToken);
 
-    const data = this.authService.getMe(user._id);
-    return data;
+      res.cookie('access_token', access_token);
+      const data = this.authService.getMe(user._id);
+      return data;
+    } catch (error) {}
   }
 
   @Mutation(() => String)

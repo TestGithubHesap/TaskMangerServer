@@ -76,6 +76,7 @@ export class CompanyService {
         user: userId,
         status: JoinRequestStatus.PENDING,
       });
+
       return {
         company,
         isCompanyEmploye: user.company == company._id,
@@ -88,9 +89,11 @@ export class CompanyService {
     if (!company) {
       this.handleError('Company not found', HttpStatus.NOT_FOUND);
     }
+    // console.log(user.company, company._id);
+    // console.log(user.company == company._id);
     return {
       company,
-      isCompanyEmploye: user.company == company._id,
+      isCompanyEmploye: user.company.equals(company._id),
       showCompanyjoinButton: false,
       isJoinRequest: false,
     };
@@ -131,7 +134,7 @@ export class CompanyService {
 
     const joinRequest = new this.companyJoinRequestModel({
       user: userId,
-      company: companyId,
+      company: new Types.ObjectId(companyId),
       status: JoinRequestStatus.PENDING,
     });
 
@@ -200,10 +203,10 @@ export class CompanyService {
   async getCompanyJoinRequests(
     companyId: string | null,
     status: JoinRequestStatus,
-    userId: string,
+    currentUserId: string,
   ): Promise<CompanyJoinRequest[]> {
     // Find user and validate existence
-    const user = await this.userModel.findById(userId);
+    const user = await this.userModel.findById(currentUserId);
     if (!user) {
       this.handleError('User not found.', HttpStatus.NOT_FOUND);
     }
@@ -260,11 +263,10 @@ export class CompanyService {
     const isExecutive = userRoles.includes(UserRole.EXECUTIVE);
 
     // Erişim iznini doğrula
-    const targetCompanyId = companyId || user.company?.toString();
-    if (
-      !isAdmin &&
-      (!isExecutive || user.company?.toString() !== targetCompanyId)
-    ) {
+    const targetCompanyId = companyId
+      ? new Types.ObjectId(companyId)
+      : user.company;
+    if (!isAdmin && (!isExecutive || !user.company.equals(targetCompanyId))) {
       this.handleError(
         'You do not have authorization to perform this operation.',
         HttpStatus.UNAUTHORIZED,
@@ -496,6 +498,13 @@ export class CompanyService {
     if (request.status !== 'pending') {
       this.handleError('Request is not pending', HttpStatus.BAD_REQUEST);
     }
+    const user = await this.userModel.findById(request.user);
+    if (user.company) {
+      request.status = CompanyRequestStatus.REJECTED;
+      request.rejectionReason = 'User already has a company';
+      await request.save();
+      this.handleError('User already has a company', HttpStatus.BAD_REQUEST);
+    }
 
     // Şirket kaydını oluştur
     const newCompany = await this.companyModel.create({
@@ -505,11 +514,27 @@ export class CompanyService {
       website: request.website,
       owner: request.user,
     });
-
+    user.company = newCompany._id;
+    if (!user.roles.includes(UserRole.EXECUTIVE)) {
+      user.roles.push(UserRole.EXECUTIVE);
+    }
+    await user.save();
     // Talep durumunu güncelle
     request.status = CompanyRequestStatus.APPROVED;
     await request.save();
 
     return newCompany;
+  }
+
+  async getCompanyRequests(status: CompanyRequestStatus) {
+    return this.companyRequestModel
+      .find({
+        status: status,
+      })
+      .populate({
+        path: 'user',
+        select: '_id  firstName lastName profilrPhoto userName ',
+      })
+      .select('_id name status user rejectionReason updatedAt createdAt');
   }
 }

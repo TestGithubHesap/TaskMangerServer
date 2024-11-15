@@ -19,7 +19,10 @@ import { GraphQLErrorInterceptor } from 'src/common/interceptors/graphql-error.i
 import { CompanyWithButton } from './dto/CompanyWithButton';
 import { SearchCompaniesInput } from './dto/searchCompaniesInput';
 import { SearchCompaniesObject } from 'src/types/object-types/SearchCompaniesObject';
-import { CompanyRequest } from 'src/schemas/companyRequest.schema';
+import {
+  CompanyRequest,
+  CompanyRequestStatus,
+} from 'src/schemas/companyRequest.schema';
 import { CreateCompanyRequestInput } from './dto/CreateCompanyRequestInput';
 @Resolver('Company')
 @UseInterceptors(GraphQLErrorInterceptor)
@@ -195,6 +198,17 @@ export class CompanyResolver {
     return this.companyService.createCompanyRequest(input, user._id);
   }
 
+  @Query(() => [CompanyRequest])
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  async getCompanyRequests(
+    @Args('status', {
+      type: () => CompanyRequestStatus,
+    })
+    status: CompanyRequestStatus,
+  ) {
+    return this.companyService.getCompanyRequests(status);
+  }
   @Mutation(() => CompanyRequest)
   @UseGuards(AuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)

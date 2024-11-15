@@ -85,6 +85,8 @@ type CompanyRequest {
   description: String!
   status: CompanyRequestStatus!
   rejectionReason: String
+  createdAt: String!
+  updatedAt: String!
 }
 
 """Status of the company  request"""
@@ -305,6 +307,7 @@ type Query {
   getCompanyJoinRequests(companyId: String, status: JoinRequestStatus!): [CompanyJoinRequest!]!
   getCompanyEmployees(companyId: String): [User!]!
   searchCompanies(input: SearchCompaniesInput!): SearchCompaniesObject!
+  getCompanyRequests(status: CompanyRequestStatus!): [CompanyRequest!]!
   getAllProjectsByCompany: [Project!]!
   getProjectsByCompany: [Project!]!
   getProjectWithDetails(projectId: String!): Project!
