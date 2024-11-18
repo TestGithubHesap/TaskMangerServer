@@ -11,7 +11,6 @@ import {
 import { GraphQLError } from 'graphql';
 import { User, UserDocument, UserRole } from 'src/schemas/user.schema';
 import { SearchCompaniesInput } from './dto/searchCompaniesInput';
-import { skipLast } from 'rxjs';
 import { PUB_SUB } from 'src/modules/pubSub.module';
 import { RedisPubSub } from 'graphql-redis-subscriptions';
 import {
@@ -72,8 +71,8 @@ export class CompanyService {
         this.handleError('Company not found', HttpStatus.NOT_FOUND);
       }
       const companyJoinReques = await this.companyJoinRequestModel.findOne({
-        company: companyId,
-        user: userId,
+        company: company._id,
+        user: user._id,
         status: JoinRequestStatus.PENDING,
       });
 
@@ -89,8 +88,7 @@ export class CompanyService {
     if (!company) {
       this.handleError('Company not found', HttpStatus.NOT_FOUND);
     }
-    // console.log(user.company, company._id);
-    // console.log(user.company == company._id);
+
     return {
       company,
       isCompanyEmploye: user.company.equals(company._id),
@@ -120,9 +118,11 @@ export class CompanyService {
     userId: string,
     companyId: string,
   ): Promise<CompanyJoinRequest> {
+    const objectUserId = new Types.ObjectId(userId);
+    const objectCompanyId = new Types.ObjectId(companyId);
     const existingRequest = await this.companyJoinRequestModel.findOne({
-      user: userId,
-      company: companyId,
+      user: objectUserId,
+      company: objectCompanyId,
       status: JoinRequestStatus.PENDING,
     });
     if (existingRequest) {
@@ -133,8 +133,8 @@ export class CompanyService {
     }
 
     const joinRequest = new this.companyJoinRequestModel({
-      user: userId,
-      company: new Types.ObjectId(companyId),
+      user: objectUserId,
+      company: objectCompanyId,
       status: JoinRequestStatus.PENDING,
     });
 
@@ -172,7 +172,8 @@ export class CompanyService {
     // Onaylayan kişi admin veya zaten yönetici olmalı
     const isAdminOrManager =
       approverUser.roles.includes(UserRole.ADMIN) ||
-      approverUser.isCompanyAdmin;
+      (approverUser.roles.includes(UserRole.EXECUTIVE) &&
+        approverUser.company.equals(joinRequest.company));
     if (!isAdminOrManager) {
       this.handleError(
         'User is not authorized to approve the request.',
@@ -244,8 +245,7 @@ export class CompanyService {
     return this.companyJoinRequestModel
       .find(queryConfig)
       .populate(populateConfig)
-      .lean()
-      .exec();
+      .lean();
   }
 
   async getCompanyEmployees(
@@ -283,7 +283,6 @@ export class CompanyService {
     companyId: string | null,
     userId: string,
     currentUserId: string,
-    userRoles: UserRole[],
   ) {
     const [currentUser, user] = await Promise.all([
       this.userModel.findById(currentUserId),
@@ -326,7 +325,6 @@ export class CompanyService {
     companyId: string | null,
     userId: string,
     currentUserId: string,
-    userRoles: UserRole[],
   ) {
     const [currentUser, user] = await Promise.all([
       this.userModel.findById(currentUserId),
@@ -366,10 +364,7 @@ export class CompanyService {
     return user;
   }
 
-  async searchCompanies(
-    { searchText, page, limit }: SearchCompaniesInput,
-    currentUserId: string,
-  ) {
+  async searchCompanies({ searchText, page, limit }: SearchCompaniesInput) {
     const skip = (page - 1) * limit;
     const baseMatchCondition = {
       $or: [

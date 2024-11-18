@@ -90,9 +90,6 @@ export class CompanyResolver {
     @Args('companyId') input: string,
     @CurrentUser() user: AuthUser,
   ) {
-    if (!user) {
-      this.handleError('user not found', HttpStatus.NOT_FOUND);
-    }
     return this.companyService.requestToJoinCompany(user._id, input);
   }
 
@@ -143,12 +140,7 @@ export class CompanyResolver {
     @Args('userId') userId: string,
     @CurrentUser() user: AuthUser,
   ) {
-    return this.companyService.promoteToExecutive(
-      companyId,
-      userId,
-      user._id,
-      user.roles,
-    );
+    return this.companyService.promoteToExecutive(companyId, userId, user._id);
   }
 
   @Mutation(() => User)
@@ -159,12 +151,7 @@ export class CompanyResolver {
     @Args('userId') userId: string,
     @CurrentUser() user: AuthUser,
   ) {
-    return this.companyService.demoteFromExecutive(
-      companyId,
-      userId,
-      user._id,
-      user.roles,
-    );
+    return this.companyService.demoteFromExecutive(companyId, userId, user._id);
   }
 
   @Query(() => SearchCompaniesObject)
@@ -173,7 +160,7 @@ export class CompanyResolver {
     @Args('input') input: SearchCompaniesInput,
     @CurrentUser() user: AuthUser,
   ) {
-    return this.companyService.searchCompanies(input, user._id);
+    return this.companyService.searchCompanies(input);
   }
 
   @Mutation(() => User)
