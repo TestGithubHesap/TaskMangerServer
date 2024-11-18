@@ -550,7 +550,7 @@ export class TaskService {
       // Şirket kontrolü
       {
         $match: {
-          'project.company': user.company.toString(),
+          'project.company': user.company,
         },
       },
       // Parent task bilgilerini getir

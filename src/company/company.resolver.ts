@@ -114,9 +114,6 @@ export class CompanyResolver {
     @Args('approve') approve: boolean,
     @CurrentUser() user: AuthUser,
   ) {
-    if (!user) {
-      this.handleError('user not found', HttpStatus.NOT_FOUND);
-    }
     return this.companyService.respondToJoinRequest(
       requestId,
       user._id,
@@ -223,6 +220,7 @@ export class CompanyResolver {
   @UseGuards(AuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   async approveCompanyRequest(@Args('requestId') requestId: string) {
+    console.log(requestId);
     return this.companyService.approveCompanyRequest(requestId);
   }
 }

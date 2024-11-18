@@ -15,6 +15,13 @@ registerEnumType(ProjectStatus, {
   name: 'ProjectStatus',
   description: 'Project statuses',
 });
+
+@ObjectType()
+export class ProjectMember extends User {
+  @Field()
+  belongsToCompany: boolean;
+}
+
 @Schema({ timestamps: true })
 @ObjectType()
 export class Project {
@@ -34,7 +41,7 @@ export class Project {
   company: Types.ObjectId;
 
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
-  @Field(() => User)
+  @Field(() => ProjectMember)
   projectManager: Types.ObjectId;
 
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
@@ -42,7 +49,7 @@ export class Project {
   createdByUser: Types.ObjectId;
 
   @Prop({ type: [{ type: Types.ObjectId, ref: 'User' }] })
-  @Field(() => [User])
+  @Field(() => [ProjectMember])
   team: Types.ObjectId[];
 
   @Prop()

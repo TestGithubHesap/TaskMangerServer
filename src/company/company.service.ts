@@ -503,6 +503,7 @@ export class CompanyService {
       request.status = CompanyRequestStatus.REJECTED;
       request.rejectionReason = 'User already has a company';
       await request.save();
+
       this.handleError('User already has a company', HttpStatus.BAD_REQUEST);
     }
 
@@ -515,8 +516,12 @@ export class CompanyService {
       owner: request.user,
     });
     user.company = newCompany._id;
+    user.isCompanyAdmin = true;
     if (!user.roles.includes(UserRole.EXECUTIVE)) {
       user.roles.push(UserRole.EXECUTIVE);
+    }
+    if (!user.roles.includes(UserRole.WORKER)) {
+      user.roles.push(UserRole.WORKER);
     }
     await user.save();
     // Talep durumunu güncelle

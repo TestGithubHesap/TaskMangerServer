@@ -109,14 +109,32 @@ type SearchCompaniesObject {
   totalCount: Float!
 }
 
+type ProjectMember {
+  _id: ID!
+  firstName: String!
+  lastName: String!
+  userName: String!
+  email: String!
+  profilePhoto: String
+  roles: [UserRole!]!
+  isDeleted: Boolean!
+  deletedAt: String
+  createdAt: String!
+  updatedAt: String!
+  status: String!
+  company: Company
+  isCompanyAdmin: Boolean!
+  belongsToCompany: Boolean!
+}
+
 type Project {
   _id: ID!
   name: String!
   description: String
   company: Company!
-  projectManager: User!
+  projectManager: ProjectMember!
   createdByUser: User!
-  team: [User!]!
+  team: [ProjectMember!]!
   startDate: String!
   endDate: String!
   status: ProjectStatus!

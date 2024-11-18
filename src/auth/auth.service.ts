@@ -51,7 +51,10 @@ export class AuthService {
       .padStart(ACTIVATION_CODE_LENGTH, '0');
   }
 
-  private async checkExistingUser(email: string): Promise<void> {
+  private async checkExistingUser(
+    email: string,
+    userName: string,
+  ): Promise<void> {
     const existingUser = await this.findUserByEmail(email);
     if (existingUser) {
       this.handleError(
@@ -60,8 +63,18 @@ export class AuthService {
       );
     }
   }
-  private async findUserByEmail(email: string): Promise<User | null> {
-    const user = await this.userModel.findOne({ email });
+  private async findUserByEmail(
+    email: string,
+    userName?: string,
+  ): Promise<User | null> {
+    const user = await this.userModel.findOne({
+      $or: [
+        {
+          email: email,
+        },
+        { userName: userName },
+      ],
+    });
     return user;
   }
   async createActivateToken(user: RegisterUserInput): Promise<string> {
@@ -103,9 +116,9 @@ export class AuthService {
   }
 
   async registerUser(registerUser: RegisterUserInput) {
-    const { email, password } = registerUser;
+    const { email, password, userName } = registerUser;
     try {
-      await this.checkExistingUser(email);
+      await this.checkExistingUser(email, userName);
       const hashedPassword = await this.hashPassword(password);
       const userWithHashedPassword = {
         ...registerUser,
@@ -116,6 +129,7 @@ export class AuthService {
       );
       return { activationToken };
     } catch (error) {
+      console.log(error);
       this.handleError(
         'Failed to register user',
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -136,11 +150,15 @@ export class AuthService {
         this.handleError('Invalid activation code', HttpStatus.BAD_REQUEST);
       }
 
-      await this.checkExistingUser(activationData.user.email);
+      await this.checkExistingUser(
+        activationData.user.email,
+        activationData.user.userName,
+      );
 
       const user = new this.userModel(activationData.user);
       return await user.save();
     } catch (error) {
+      console.log(error);
       this.handleError(
         'Failed to activate user',
         HttpStatus.INTERNAL_SERVER_ERROR,

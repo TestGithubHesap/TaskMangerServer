@@ -1,4 +1,9 @@
-import { HttpStatus, Inject, Injectable } from '@nestjs/common';
+import {
+  HttpStatus,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Project, ProjectDocument } from 'src/schemas/project.schema';
@@ -119,14 +124,62 @@ export class ProjectService {
       .findById(projectId)
       .populate({
         path: 'projectManager',
-        select: '_id firstName lastName profilePhoto',
+        select: '_id firstName lastName profilePhoto company',
+        model: 'User',
       })
       .populate({
         path: 'team',
-        select: '_id firstName lastName profilePhoto',
+        select: '_id firstName lastName profilePhoto company',
         model: 'User',
-      });
-    // console.log(project);
+      })
+      .populate('company');
+
+    if (!project) {
+      throw new NotFoundException('Project not found');
+    }
+
+    const projectCompanyId = project.company._id.toString();
+
+    // Project manager dönüşümü - Güvenli şekilde kontrol ediyoruz
+    if (project.projectManager) {
+      const manager = project.projectManager as any; // Type assertion for access
+      const managerCompanyId = manager.company
+        ? manager.company.toString()
+        : null;
+
+      const managerData = {
+        _id: manager._id,
+        firstName: manager.firstName,
+        lastName: manager.lastName,
+        profilePhoto: manager.profilePhoto,
+        belongsToCompany: managerCompanyId
+          ? projectCompanyId === managerCompanyId
+          : false,
+      };
+
+      project.projectManager = managerData as any;
+    }
+
+    // Team üyeleri dönüşümü - Güvenli şekilde kontrol ediyoruz
+    if (project.team && project.team.length > 0) {
+      project.team = project.team.map((member) => {
+        const teamMember = member as any; // Type assertion for access
+        const memberCompanyId = teamMember.company
+          ? teamMember.company.toString()
+          : null;
+
+        return {
+          _id: teamMember._id,
+          firstName: teamMember.firstName,
+          lastName: teamMember.lastName,
+          profilePhoto: teamMember.profilePhoto,
+          belongsToCompany: memberCompanyId
+            ? projectCompanyId === memberCompanyId
+            : false,
+        };
+      }) as any;
+    }
+
     return project;
   }
   async getTasksProject(projectId: string) {
