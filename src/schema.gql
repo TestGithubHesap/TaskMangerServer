@@ -366,6 +366,7 @@ type Mutation {
   resetPassword(input: ResetPasswordInput!): String!
   updateUser(input: UpdateUserInput!): User!
   updateUserStatus(status: String!): Boolean!
+  uploadProfilePhoto(profilePhoto: String!): User!
   createCompany(input: CreateCompanyInput!): Company!
   requestToJoinCompany(companyId: String!): CompanyJoinRequest!
   cancelJoinCompanyRequest(companyId: String!): CompanyJoinRequest!

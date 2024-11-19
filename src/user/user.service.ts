@@ -36,17 +36,21 @@ export class UserService {
     return await this.userModel.find();
   }
 
-  async userUpdate(
-    id: string,
-    updateUserInput: UpdateUserInput,
-  ): Promise<User> {
+  async userUpdate(updateUserInput: UpdateUserInput): Promise<User> {
     try {
-      const user = await this.userModel.findByIdAndUpdate(id, updateUserInput, {
-        new: true,
-      });
+      const user = await this.userModel.findByIdAndUpdate(
+        updateUserInput._id,
+        updateUserInput,
+        {
+          new: true,
+        },
+      );
 
       if (!user) {
-        this.handleError(`User with ID ${id} not found`, HttpStatus.NOT_FOUND);
+        this.handleError(
+          `User with ID ${updateUserInput._id} not found`,
+          HttpStatus.NOT_FOUND,
+        );
       }
       return user;
     } catch (error) {
@@ -200,6 +204,23 @@ export class UserService {
     } catch (error) {
       this.handleError(
         'Search users failed',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
+    }
+  }
+
+  async uploadProfilePhoto(profilePhoto: string, currentUserId: string) {
+    try {
+      const updateUser = await this.userModel.findByIdAndUpdate(currentUserId, {
+        $set: {
+          profilePhoto: profilePhoto,
+        },
+      });
+      return updateUser;
+    } catch (error) {
+      this.handleError(
+        'Upload profile photo failed',
         HttpStatus.INTERNAL_SERVER_ERROR,
         error,
       );

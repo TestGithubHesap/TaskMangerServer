@@ -50,11 +50,8 @@ export class UserResolver {
     @Args('input') input: UpdateUserInput,
     @CurrentUser() user: AuthUser,
   ): Promise<User> {
-    if (!user) {
-      this.handleError('user not found', HttpStatus.NOT_FOUND);
-    }
     if (user.roles.includes(UserRole.ADMIN) || user._id === input._id) {
-      return this.userService.userUpdate(input._id, input);
+      return this.userService.userUpdate(input);
     } else {
       this.handleError(
         'you are not authorized to update this user',
@@ -127,5 +124,13 @@ export class UserResolver {
     @Context() context: { req: Request; res: Response },
   ) {
     return this.pubSub.asyncIterator(CHANGE_USER_ROLE);
+  }
+  @Mutation(() => User)
+  @UseGuards(AuthGuard)
+  async uploadProfilePhoto(
+    @CurrentUser() user: AuthUser,
+    @Args('profilePhoto') profilePhoto: string,
+  ) {
+    return await this.userService.uploadProfilePhoto(profilePhoto, user._id);
   }
 }
