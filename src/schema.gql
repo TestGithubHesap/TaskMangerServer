@@ -58,6 +58,24 @@ type SearchUsersObject {
   totalCount: Float!
 }
 
+type GetUserProfileObject {
+  _id: ID!
+  firstName: String!
+  lastName: String!
+  userName: String!
+  email: String!
+  profilePhoto: String
+  roles: [UserRole!]!
+  isDeleted: Boolean!
+  deletedAt: String
+  createdAt: String!
+  updatedAt: String!
+  status: String!
+  company: Company
+  isCompanyAdmin: Boolean!
+  chatId: String
+}
+
 type CompanyJoinRequest {
   _id: ID!
   user: User!
@@ -320,6 +338,7 @@ type Query {
   rolecheck: String!
   getCompanyUsers: [User!]!
   searchUsers(input: SearchUsersInput!): SearchUsersObject!
+  getUserProfile(userId: String!): GetUserProfileObject!
   getCompany(companyId: String!): Company!
   getCompanyByUser(companyId: String): CompanyWithButton!
   getCompanyJoinRequests(companyId: String, status: JoinRequestStatus!): [CompanyJoinRequest!]!

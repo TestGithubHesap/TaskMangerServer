@@ -22,6 +22,7 @@ import { SearchUsersInput } from './dto/searchUsersInput';
 import { SearchUsersObject } from 'src/types/object-types/SearchUsersObject';
 import { Request, Response } from 'express';
 import { AuthService } from 'src/auth/auth.service';
+import { GetUserProfileObject } from 'src/types/object-types/GetUserProfileObject';
 const CHANGE_USER_STATUS = 'changeUserStatus';
 const CHANGE_USER_ROLE = 'changeUserRole';
 @Resolver('User')
@@ -132,5 +133,14 @@ export class UserResolver {
     @Args('profilePhoto') profilePhoto: string,
   ) {
     return await this.userService.uploadProfilePhoto(profilePhoto, user._id);
+  }
+
+  @Query(() => GetUserProfileObject)
+  @UseGuards(AuthGuard)
+  async getUserProfile(
+    @Args('userId') userId: string,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.userService.getUserProfile(userId, user._id);
   }
 }

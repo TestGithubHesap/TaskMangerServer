@@ -52,14 +52,24 @@ export class ChatResolver {
     });
   }
   @Mutation(() => Chat)
-  @UseGuards(AuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.EXECUTIVE)
+  @UseGuards(AuthGuard)
   async createChat(
     @Args('input') input: CreateChatInput,
     @CurrentUser() user: AuthUser,
   ): Promise<Chat> {
-    if (!user) {
-      this.handleError('user not found', HttpStatus.NOT_FOUND);
+    if (
+      user.roles.includes(UserRole.ADMIN) ||
+      user.roles.includes(UserRole.EXECUTIVE)
+    ) {
+      return this.chatService.createChat(user._id, input);
+    }
+
+    // Kullanıcı sıradan bir kullanıcı ise sadece direct chat oluşturabilir
+    if (input.participants.length > 1) {
+      this.handleError(
+        'You are not allowed to create a group chat',
+        HttpStatus.FORBIDDEN,
+      );
     }
 
     return this.chatService.createChat(user._id, input);

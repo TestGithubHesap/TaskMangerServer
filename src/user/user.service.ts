@@ -1,6 +1,6 @@
 import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, PipelineStage } from 'mongoose';
+import { Model, PipelineStage, Types } from 'mongoose';
 import { User, UserDocument, UserRole } from 'src/schemas/user.schema';
 import { UpdateUserInput } from './dto/updateUserInput';
 import { GraphQLError } from 'graphql';
@@ -225,5 +225,95 @@ export class UserService {
         error,
       );
     }
+  }
+
+  async getUserProfile(
+    userId: string,
+    currentUserId: string,
+  ): Promise<{ chatId: string | null; user: User | null }> {
+    const result = await this.userModel.aggregate([
+      // 1. Kullanıcıyı filtrele
+      { $match: { _id: new Types.ObjectId(userId) } },
+      {
+        $lookup: {
+          from: 'companies',
+          let: { companyId: '$company' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $eq: ['$_id', { $toObjectId: '$$companyId' }], // companyId'yi ObjectId'ye dönüştürüyoruz
+                },
+              },
+            },
+            {
+              $project: {
+                _id: 1,
+                name: 1,
+              },
+            },
+          ],
+          as: 'company',
+        },
+      },
+      {
+        $unwind: {
+          path: '$company',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      // 2. Kullanıcının bilgilerini ekle
+      {
+        $lookup: {
+          from: 'chats', // Chat koleksiyonunu bağla
+          let: { userId: '$_id' }, // Kullanıcı ID'sini `let` değişkenine ata
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $in: ['$$userId', '$participants'] }, // Hedef kullanıcı
+                    {
+                      $in: [new Types.ObjectId(currentUserId), '$participants'],
+                    }, // Şu anki kullanıcı
+                    { $eq: ['$metadata.type', 'direct'] }, // Sadece direct chatleri kontrol et
+                  ],
+                },
+              },
+            },
+            { $limit: 1 }, // Sadece ilk eşleşmeyi al
+            { $project: { _id: 1 } }, // Sadece chatId'yi al
+          ],
+          as: 'directChat', // Sonuçları `directChat` alanına ekle
+        },
+      },
+
+      // 3. `directChat` alanını düzleştir
+      {
+        $addFields: {
+          chatId: { $arrayElemAt: ['$directChat._id', 0] },
+        },
+      },
+
+      // 4. Gereksiz alanları çıkar
+      {
+        $project: {
+          directChat: 0, // `directChat` dizisini dahil etme
+        },
+      },
+    ]);
+
+    if (!result.length) {
+      return { chatId: null, user: null };
+    }
+
+    // İlk sonucu döndür
+    const { chatId, ...user } = result[0];
+    console.log(chatId);
+    return result[0];
+    // return {
+    //   chatId: chatId || null,
+    //   user: user as User,
+    // };
   }
 }
