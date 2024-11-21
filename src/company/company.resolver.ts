@@ -193,6 +193,19 @@ export class CompanyResolver {
   ) {
     return this.companyService.getCompanyRequests(status);
   }
+
+  @Query(() => [CompanyJoinRequest])
+  @UseGuards(AuthGuard)
+  async getMyCompanyMembershipRequests(
+    @Args('status', {
+      type: () => JoinRequestStatus,
+    })
+    status: JoinRequestStatus,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.companyService.getMyCompanyMembershipRequests(status, user._id);
+  }
+
   @Mutation(() => CompanyRequest)
   @UseGuards(AuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)

@@ -75,10 +75,12 @@ export class CompanyService {
         user: user._id,
         status: JoinRequestStatus.PENDING,
       });
+      console.log(user.company);
+      console.log(company._id);
 
       return {
         company,
-        isCompanyEmploye: user.company == company._id,
+        isCompanyEmploye: user.company?.equals(company._id) || false,
         showCompanyjoinButton: !user.company,
         isJoinRequest: !!companyJoinReques,
       };
@@ -99,8 +101,8 @@ export class CompanyService {
 
   async cancelJoinCompanyRequest(userId: string, companyId: string) {
     const companyJoinRequest = await this.companyJoinRequestModel.findOne({
-      company: companyId,
-      user: userId,
+      company: new Types.ObjectId(companyId),
+      user: new Types.ObjectId(userId),
       status: JoinRequestStatus.PENDING,
     });
     if (!companyJoinRequest) {
@@ -113,6 +115,28 @@ export class CompanyService {
   async createCompany(input: CreateCompanyInput) {
     const company = new this.companyModel(input);
     return await company.save();
+  }
+
+  async getMyCompanyMembershipRequests(
+    status: JoinRequestStatus,
+    currentUserId: string,
+  ) {
+    console.log(currentUserId);
+    const queryConfig = {
+      status,
+      user: new Types.ObjectId(currentUserId),
+    };
+
+    const populateConfig = [
+      { path: 'user', select: '_id userName profilePhoto' },
+      { path: 'company', select: '_id name' },
+    ];
+    const data = await this.companyJoinRequestModel
+      .find(queryConfig)
+      .populate(populateConfig)
+      .lean();
+
+    return data;
   }
   async requestToJoinCompany(
     userId: string,

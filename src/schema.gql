@@ -345,6 +345,7 @@ type Query {
   getCompanyEmployees(companyId: String): [User!]!
   searchCompanies(input: SearchCompaniesInput!): SearchCompaniesObject!
   getCompanyRequests(status: CompanyRequestStatus!): [CompanyRequest!]!
+  getMyCompanyMembershipRequests(status: JoinRequestStatus!): [CompanyJoinRequest!]!
   getAllProjectsByCompany: [Project!]!
   getProjectsByCompany: [Project!]!
   getProjectWithDetails(projectId: String!): Project!
