@@ -25,7 +25,8 @@ async function bootstrap() {
   );
 
   app.enableCors({
-    origin: ['http://localhost:5173'],
+    origin: 'http://localhost:5173',
+    credentials: true,
     // allowedHeaders: [
     //   'Content-Type',
     //   'apollo-require-preflight',
@@ -33,7 +34,6 @@ async function bootstrap() {
     //   'Authorization',
     //   'X-Requested-With',
     // ],
-    credentials: true,
   });
 
   const port = process.env.PORT || 3000;

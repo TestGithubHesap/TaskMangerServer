@@ -16,7 +16,7 @@ export class AuthGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     console.log('can activate input');
     const { request, response } = this.getRequestResponse(context);
-    console.log(request, response);
+    // console.log(request, response);
     const jwt = request.cookies['access_token'];
     if (!jwt) {
       console.log('jwt tok', request.cookies);
@@ -40,6 +40,7 @@ export class AuthGuard implements CanActivate {
 
   // Yardımcı Fonksiyon: Request ve Response alma
   private getRequestResponse(context: ExecutionContext) {
+    console.log(context.getType());
     if (context.getType().toString() === 'graphql') {
       const gqlContext = GqlExecutionContext.create(context);
       return {
