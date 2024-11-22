@@ -14,10 +14,12 @@ export class AuthGuard implements CanActivate {
   constructor(private readonly authService: AuthService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
+    console.log('can activate input');
     const { request, response } = this.getRequestResponse(context);
-
+    console.log(request, response);
     const jwt = request.cookies['access_token'];
     if (!jwt) {
+      console.log('jwt tok', request.cookies);
       return this.handleUnauthorized(request, response);
     }
 
@@ -86,6 +88,7 @@ export class AuthGuard implements CanActivate {
     response: Response,
   ): boolean {
     // Yetkisiz erişim olduğunda buraya ek işlemler ekleyebilirsiniz.
+    console.log('jwt is not found handleUnauthorized');
     return false;
   }
 }

@@ -28,7 +28,7 @@ import { ChatModule } from './chat/chat.module';
 
       driver: ApolloDriver,
       useFactory: async (configService: ConfigService) => ({
-        playground: Boolean(configService.get('GRAPHQL_PLAYGROUND')),
+        playground: true,
         autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
         uploads: false,
 
