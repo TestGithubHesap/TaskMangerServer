@@ -17,7 +17,7 @@ import {
 } from 'src/schemas/companyJoinRequest.schema';
 import { GraphQLErrorInterceptor } from 'src/common/interceptors/graphql-error.interceptor';
 import { CompanyWithButton } from './dto/CompanyWithButton';
-import { SearchCompaniesInput } from './dto/searchCompaniesInput';
+import { SearchCompaniesInput } from './dto/SearchCompaniesInput';
 import { SearchCompaniesObject } from 'src/types/object-types/SearchCompaniesObject';
 import {
   CompanyRequest,
