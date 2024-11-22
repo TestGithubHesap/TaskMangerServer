@@ -55,8 +55,16 @@ export class AuthResolver {
     const { req, res } = context;
     const data = await this.authService.loginUser(input);
     if (data.refresh_token && data.access_token) {
-      res.cookie('refresh_token', data.refresh_token);
-      res.cookie('access_token', data.access_token);
+      res.cookie('refresh_token', data.refresh_token, {
+        httpOnly: true,
+        secure: true, // HTTPS gerektiğini belirtir
+        sameSite: 'none', // Çapraz kaynak talepler için zorunlu
+      });
+      res.cookie('access_token', data.access_token, {
+        httpOnly: true,
+        secure: true, // HTTPS gerektiğini belirtir
+        sameSite: 'none', // Çapraz kaynak talepler için zorunlu
+      });
     }
     return data;
   }
@@ -73,7 +81,11 @@ export class AuthResolver {
       const { access_token, user } =
         await this.authService.refreshAccessToken(refreshToken);
 
-      res.cookie('access_token', access_token);
+      res.cookie('access_token', access_token, {
+        httpOnly: true,
+        secure: true, // HTTPS gerektiğini belirtir
+        sameSite: 'none', // Çapraz kaynak talepler için zorunlu
+      });
       const data = this.authService.getMe(user._id);
       return data;
     } catch (error) {}
