@@ -10,7 +10,7 @@ import {
 } from 'src/schemas/companyJoinRequest.schema';
 import { GraphQLError } from 'graphql';
 import { User, UserDocument, UserRole } from 'src/schemas/user.schema';
-import { SearchCompaniesInput } from './dto/searchCompaniesInput';
+import { SearchCompaniesInput } from './dto/SearchCompaniesInput';
 import { PUB_SUB } from 'src/modules/pubSub.module';
 import { RedisPubSub } from 'graphql-redis-subscriptions';
 import {
