@@ -28,6 +28,8 @@ import { SignUrlOutput } from 'src/types/object-types/SignUrlObject';
 import { SignUrlInput } from './dto/SignUrlInput';
 import { ChatMessages } from 'src/types/object-types/ChatMessage';
 import { GetChatUsersObject } from './dto/GetChatUsersObject';
+import { VideoSdkService } from 'src/videoskd/videosdk.service';
+import { MeetingResponseObject } from 'src/types/object-types/MeetingResponseObject';
 
 const ADD_MESSAGE = 'addMessageToChat';
 
@@ -37,6 +39,7 @@ export class ChatResolver {
   constructor(
     private readonly chatService: ChatService,
     private readonly cloudinaryService: CloudinaryService,
+    private readonly videoSdkService: VideoSdkService,
     @Inject(PUB_SUB) private readonly pubSub: RedisPubSub,
   ) {}
   private handleError(
@@ -204,5 +207,30 @@ export class ChatResolver {
     @CurrentUser() user: AuthUser,
   ) {
     return this.chatService.freezeChat(chatId, user._id, user.roles);
+  }
+
+  @Mutation(() => String)
+  @UseGuards(AuthGuard)
+  async generateToken(
+    @Args('chatId', { type: () => String }) chatId: string,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.videoSdkService.generateToken(chatId, user._id);
+  }
+
+  @Mutation(() => MeetingResponseObject)
+  @UseGuards(AuthGuard)
+  async createMeeting(
+    @Args('token', { type: () => String }) token: string,
+    @Args('chatId', { type: () => String }) chatId: string,
+    @CurrentUser() user: AuthUser,
+  ) {
+    // const token = this.videoSdkService.generateToken(chatId, user._id);
+    const meeating = await this.videoSdkService.createMeeting(
+      token,
+      'tr',
+      chatId,
+    );
+    return meeating;
   }
 }

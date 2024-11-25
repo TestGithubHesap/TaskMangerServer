@@ -326,6 +326,23 @@ type GetChatUsersObject {
   participants: [ChatParticipantObject!]!
 }
 
+type LinksResponse {
+  get_room: String!
+  get_session: String!
+}
+
+type MeetingResponseObject {
+  apiKey: String!
+  customMeetingId: String!
+  roomId: String!
+  customRoomId: String!
+  disabled: Boolean!
+  createdAt: String!
+  updatedAt: String!
+  links: LinksResponse!
+  id: String!
+}
+
 type GetChatMessagesObject {
   messages: [ChatMessages!]!
   totalMessages: Float!
@@ -412,6 +429,8 @@ type Mutation {
   addChatParticipant(chatId: String!, userId: String!): Chat!
   updateChatName(chatId: String!, name: String!): Chat!
   freezeChat(chatId: String!): Chat!
+  generateToken(chatId: String!): String!
+  createMeeting(token: String!, chatId: String!): MeetingResponseObject!
   addMessageToChat(input: CreateMessageInput!): Message!
   markMessagesAsRead(messageIds: [String!]!): Boolean!
   markChatMessagesAsRead(chatId: String!): Boolean!
