@@ -29,14 +29,18 @@ import { SignUrlInput } from './dto/SignUrlInput';
 import { ChatMessages } from 'src/types/object-types/ChatMessage';
 import { GetChatUsersObject } from './dto/GetChatUsersObject';
 
-const ADD_MESSAGE = 'addMessageToChat';
+import { MeetingResponseObject } from 'src/types/object-types/MeetingResponseObject';
+import { VideoCallNotificationObject } from 'src/types/object-types/VideoCallNotificationObject';
 
+const ADD_MESSAGE = 'addMessageToChat';
+const VIDEO_CALL_STARTED = 'videoCallStarted';
 @Resolver()
 @UseInterceptors(GraphQLErrorInterceptor)
 export class ChatResolver {
   constructor(
     private readonly chatService: ChatService,
     private readonly cloudinaryService: CloudinaryService,
+
     @Inject(PUB_SUB) private readonly pubSub: RedisPubSub,
   ) {}
   private handleError(
@@ -204,5 +208,53 @@ export class ChatResolver {
     @CurrentUser() user: AuthUser,
   ) {
     return this.chatService.freezeChat(chatId, user._id, user.roles);
+  }
+
+  @Mutation(() => String)
+  @UseGuards(AuthGuard)
+  async joinVideoRoom(
+    @Args('chatId', { type: () => String }) chatId: string,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.chatService.joinVideoRoom({
+      chatId,
+      currentUserId: user._id,
+    });
+  }
+
+  @Mutation(() => Boolean)
+  @UseGuards(AuthGuard)
+  async startVideoCall(
+    @Args('chatId', { type: () => String }) chatId: string,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.chatService.startVideoCall(user._id, chatId);
+  }
+
+  @UseGuards(AuthGuard)
+  @Subscription(() => VideoCallNotificationObject, {
+    filter: async function (payload, variables, context) {
+      const { req, res } = context;
+      if (!req?.user) {
+        this.handleError('UserNot Found', HttpStatus.NOT_FOUND);
+      }
+      const user = req.user;
+      const isUserInParticipants = await this.isUserInParticipants(
+        payload.videoCallStarted.participants,
+        user._id,
+      );
+
+      return variables.userId == user._id && isUserInParticipants;
+    },
+  })
+  videoCallStarted(@Args('userId') userId: string) {
+    return this.pubSub.asyncIterator(VIDEO_CALL_STARTED);
+  }
+
+  async isUserInParticipants(
+    participants: string[],
+    userId: string,
+  ): Promise<boolean> {
+    return participants.includes(userId);
   }
 }

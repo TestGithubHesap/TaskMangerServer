@@ -13,11 +13,14 @@ import {
   MediaContentSchema,
 } from 'src/schemas/mediaContent.schema';
 import { CloudinaryModule } from 'src/cloudinary/cloudinary.module';
+import { LivekitModule } from 'src/liveKit/liveKit.module';
+;
 
 @Module({
   imports: [
     AuthModule,
     CloudinaryModule,
+    LivekitModule,
     MongooseModule.forFeature([
       { name: User.name, schema: UserSchema },
       { name: Chat.name, schema: ChatSchema },

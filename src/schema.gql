@@ -326,6 +326,12 @@ type GetChatUsersObject {
   participants: [ChatParticipantObject!]!
 }
 
+type VideoCallNotificationObject {
+  chatId: String!
+  participants: [String!]!
+  userName: String!
+}
+
 type GetChatMessagesObject {
   messages: [ChatMessages!]!
   totalMessages: Float!
@@ -412,6 +418,8 @@ type Mutation {
   addChatParticipant(chatId: String!, userId: String!): Chat!
   updateChatName(chatId: String!, name: String!): Chat!
   freezeChat(chatId: String!): Chat!
+  joinVideoRoom(chatId: String!): String!
+  startVideoCall(chatId: String!): Boolean!
   addMessageToChat(input: CreateMessageInput!): Message!
   markMessagesAsRead(messageIds: [String!]!): Boolean!
   markChatMessagesAsRead(chatId: String!): Boolean!
@@ -539,4 +547,5 @@ type Subscription {
   changeUserRole: User!
   createCompanyProject(companyId: String!): Project!
   addMessageToChat(chatId: String!): ChatMessages!
+  videoCallStarted(userId: String!): VideoCallNotificationObject!
 }
