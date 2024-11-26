@@ -326,21 +326,10 @@ type GetChatUsersObject {
   participants: [ChatParticipantObject!]!
 }
 
-type LinksResponse {
-  get_room: String!
-  get_session: String!
-}
-
-type MeetingResponseObject {
-  apiKey: String!
-  customMeetingId: String!
-  roomId: String!
-  customRoomId: String!
-  disabled: Boolean!
-  createdAt: String!
-  updatedAt: String!
-  links: LinksResponse!
-  id: String!
+type VideoCallNotificationObject {
+  chatId: String!
+  participants: [String!]!
+  userName: String!
 }
 
 type GetChatMessagesObject {
@@ -429,8 +418,8 @@ type Mutation {
   addChatParticipant(chatId: String!, userId: String!): Chat!
   updateChatName(chatId: String!, name: String!): Chat!
   freezeChat(chatId: String!): Chat!
-  generateToken(chatId: String!): String!
-  createMeeting(token: String!, chatId: String!): MeetingResponseObject!
+  joinVideoRoom(chatId: String!): String!
+  startVideoCall(chatId: String!): Boolean!
   addMessageToChat(input: CreateMessageInput!): Message!
   markMessagesAsRead(messageIds: [String!]!): Boolean!
   markChatMessagesAsRead(chatId: String!): Boolean!
@@ -558,4 +547,5 @@ type Subscription {
   changeUserRole: User!
   createCompanyProject(companyId: String!): Project!
   addMessageToChat(chatId: String!): ChatMessages!
+  videoCallStarted(userId: String!): VideoCallNotificationObject!
 }

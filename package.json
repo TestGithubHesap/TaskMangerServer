@@ -41,6 +41,7 @@
     "ejs": "^3.1.10",
     "graphql": "^16.9.0",
     "graphql-redis-subscriptions": "^2.6.1",
+    "livekit-server-sdk": "^1.2.7",
     "mongoose": "^8.7.1",
     "nodemailer": "^6.9.15",
     "reflect-metadata": "^0.2.0",

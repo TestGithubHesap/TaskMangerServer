@@ -28,18 +28,19 @@ import { SignUrlOutput } from 'src/types/object-types/SignUrlObject';
 import { SignUrlInput } from './dto/SignUrlInput';
 import { ChatMessages } from 'src/types/object-types/ChatMessage';
 import { GetChatUsersObject } from './dto/GetChatUsersObject';
-import { VideoSdkService } from 'src/videoskd/videosdk.service';
+
 import { MeetingResponseObject } from 'src/types/object-types/MeetingResponseObject';
+import { VideoCallNotificationObject } from 'src/types/object-types/VideoCallNotificationObject';
 
 const ADD_MESSAGE = 'addMessageToChat';
-
+const VIDEO_CALL_STARTED = 'videoCallStarted';
 @Resolver()
 @UseInterceptors(GraphQLErrorInterceptor)
 export class ChatResolver {
   constructor(
     private readonly chatService: ChatService,
     private readonly cloudinaryService: CloudinaryService,
-    private readonly videoSdkService: VideoSdkService,
+
     @Inject(PUB_SUB) private readonly pubSub: RedisPubSub,
   ) {}
   private handleError(
@@ -211,26 +212,49 @@ export class ChatResolver {
 
   @Mutation(() => String)
   @UseGuards(AuthGuard)
-  async generateToken(
+  async joinVideoRoom(
     @Args('chatId', { type: () => String }) chatId: string,
     @CurrentUser() user: AuthUser,
   ) {
-    return this.videoSdkService.generateToken(chatId, user._id);
+    return this.chatService.joinVideoRoom({
+      chatId,
+      currentUserId: user._id,
+    });
   }
 
-  @Mutation(() => MeetingResponseObject)
+  @Mutation(() => Boolean)
   @UseGuards(AuthGuard)
-  async createMeeting(
-    @Args('token', { type: () => String }) token: string,
+  async startVideoCall(
     @Args('chatId', { type: () => String }) chatId: string,
     @CurrentUser() user: AuthUser,
   ) {
-    // const token = this.videoSdkService.generateToken(chatId, user._id);
-    const meeating = await this.videoSdkService.createMeeting(
-      token,
-      'tr',
-      chatId,
-    );
-    return meeating;
+    return this.chatService.startVideoCall(user._id, chatId);
+  }
+
+  @UseGuards(AuthGuard)
+  @Subscription(() => VideoCallNotificationObject, {
+    filter: async function (payload, variables, context) {
+      const { req, res } = context;
+      if (!req?.user) {
+        this.handleError('UserNot Found', HttpStatus.NOT_FOUND);
+      }
+      const user = req.user;
+      const isUserInParticipants = await this.isUserInParticipants(
+        payload.videoCallStarted.participants,
+        user._id,
+      );
+
+      return variables.userId == user._id && isUserInParticipants;
+    },
+  })
+  videoCallStarted(@Args('userId') userId: string) {
+    return this.pubSub.asyncIterator(VIDEO_CALL_STARTED);
+  }
+
+  async isUserInParticipants(
+    participants: string[],
+    userId: string,
+  ): Promise<boolean> {
+    return participants.includes(userId);
   }
 }

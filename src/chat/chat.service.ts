@@ -1,4 +1,4 @@
-import { HttpStatus, Injectable } from '@nestjs/common';
+import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { GraphQLError } from 'graphql';
 import { Model, Types } from 'mongoose';
@@ -10,13 +10,18 @@ import {
 } from 'src/schemas/message.schema';
 import { User, UserDocument, UserRole } from 'src/schemas/user.schema';
 import { CreateChatInput } from './dto/CreateChatInput';
-
+import { LivekitService } from 'src/liveKit/liveKit.service';
+import { RedisPubSub } from 'graphql-redis-subscriptions';
+import { PUB_SUB } from 'src/modules/pubSub.module';
+const VIDEO_CALL_STARTED = 'videoCallStarted';
 @Injectable()
 export class ChatService {
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectModel(Chat.name) private chatModel: Model<ChatDocument>,
     @InjectModel(Message.name) private messageModel: Model<MessageDocument>,
+    private readonly liveKitService: LivekitService,
+    @Inject(PUB_SUB) private readonly pubSub: RedisPubSub,
   ) {}
   private handleError(
     message: string,
@@ -73,8 +78,9 @@ export class ChatService {
         },
       });
 
+      const roomName = `chat-${chat._id}`;
+      await this.liveKitService.createRoom(roomName);
       const savedChat = await chat.save();
-
       return savedChat;
     } catch (error) {
       this.handleError(
@@ -90,6 +96,24 @@ export class ChatService {
       this.handleError('Chat not found', HttpStatus.NOT_FOUND);
     }
     return chat;
+  }
+
+  async joinVideoRoom(joinVideoRoom: {
+    chatId: string;
+    currentUserId: string;
+  }) {
+    const { chatId, currentUserId } = joinVideoRoom;
+
+    const chat = await this.chatModel.findOne({
+      _id: chatId,
+      participants: { $in: new Types.ObjectId(currentUserId) },
+    });
+    if (!chat) {
+      this.handleError('Chat not found ', HttpStatus.NOT_FOUND);
+    }
+    const roomName = `chat-${chat._id}`;
+    const token = this.liveKitService.generateToken(roomName, currentUserId);
+    return token;
   }
 
   private async validateChatCreation(
@@ -534,5 +558,35 @@ export class ChatService {
     chat.isDeleted = true;
     chat.deletedAt = new Date();
     return chat.save();
+  }
+
+  async startVideoCall(currentUserId: string, chatId: string) {
+    const isRoomActive = await this.liveKitService.isRoomActive(
+      `chat-${chatId}`,
+    );
+    console.log(isRoomActive);
+    if (isRoomActive) {
+      console.log('hello');
+      return true;
+      // this.handleError('Video call is already active', HttpStatus.CONFLICT);
+    }
+    const chat = await this.chatModel.findById(chatId);
+    const user = await this.userModel.findById(currentUserId);
+    if (!chat || !user) {
+      this.handleError('Chat or User not found', HttpStatus.NOT_FOUND);
+    }
+    const participants = chat.participants.filter(
+      (participant) => participant._id.toString() !== currentUserId,
+    );
+
+    this.pubSub.publish(VIDEO_CALL_STARTED, {
+      videoCallStarted: {
+        participants: participants,
+        chatId: chat._id,
+        userName: user.userName,
+      },
+    });
+
+    return true;
   }
 }
