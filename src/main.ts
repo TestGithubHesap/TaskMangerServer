@@ -4,6 +4,7 @@ import { HttpStatus, ValidationPipe } from '@nestjs/common';
 import { ValidationError } from 'class-validator';
 import { GraphQLError } from 'graphql';
 import * as cookieParser from 'cookie-parser';
+import { SharedService } from './Shared/shared.service';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.use(cookieParser());
@@ -35,7 +36,9 @@ async function bootstrap() {
     //   'X-Requested-With',
     // ],
   });
-
+  const sharedService = app.get(SharedService);
+  app.connectMicroservice(sharedService.getRmqOptions('NOTIFICATION'));
+  app.startAllMicroservices();
   const port = process.env.PORT || 3000;
   await app.listen(port);
 }

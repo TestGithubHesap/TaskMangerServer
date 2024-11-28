@@ -17,6 +17,10 @@ import {
   MediaContent,
   MediaContentDocument,
 } from 'src/schemas/mediaContent.schema';
+import { NotificationService } from 'src/notification/notification.service';
+import { NotificationType } from 'src/schemas/notification.schema';
+import { ObjectType } from '@nestjs/graphql';
+import { ClientProxy } from '@nestjs/microservices';
 
 @Injectable()
 export class MessageService {
@@ -27,6 +31,8 @@ export class MessageService {
     @InjectModel(MediaContent.name)
     private mediaContentModel: Model<MediaContentDocument>,
     @Inject(PUB_SUB) private readonly pubSub: RedisPubSub,
+    @Inject('NOTIFICATION_SERVICE')
+    private readonly notificationServiceClient: ClientProxy,
   ) {}
   private handleError(
     message: string,
@@ -107,7 +113,22 @@ export class MessageService {
       this.pubSub.publish('addMessageToChat', {
         addMessageToChat: messageForPublish,
       });
+      if (chat.participants.length == 2) {
+        const notificationInput = {
+          senderId: user._id,
+          recipientId: chat.participants
+            .find((participant) => participant.toString() !== userId)
+            .toString(),
+          type: NotificationType.DIRECT_MESSAGE,
+          content: {
+            _id: new Types.ObjectId(user._id),
+          },
+          contentType: 'User',
+          message: `${user.userName} messaj attı`,
+        };
 
+        this.notificationEmitEvent('create_notification', notificationInput);
+      }
       return newMessage;
     } catch (error) {
       this.handleError(
@@ -265,5 +286,9 @@ export class MessageService {
         error,
       );
     }
+  }
+
+  private notificationEmitEvent(cmd: string, payload: any) {
+    this.notificationServiceClient.emit(cmd, payload);
   }
 }

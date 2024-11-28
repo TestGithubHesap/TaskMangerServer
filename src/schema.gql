@@ -332,6 +332,27 @@ type VideoCallNotificationObject {
   userName: String!
 }
 
+type Notification {
+  _id: ID!
+  recipient: User!
+  sender: User!
+  type: NotificationType!
+  content: Content
+  contentType: String!
+  message: String!
+  isRead: Boolean!
+}
+
+"""Type of notification content"""
+enum NotificationType {
+  TASK
+  PROJECT
+  Company
+  DIRECT_MESSAGE
+}
+
+union Content = Project | Task | Company | User
+
 type GetChatMessagesObject {
   messages: [ChatMessages!]!
   totalMessages: Float!
@@ -548,4 +569,5 @@ type Subscription {
   createCompanyProject(companyId: String!): Project!
   addMessageToChat(chatId: String!): ChatMessages!
   videoCallStarted(userId: String!): VideoCallNotificationObject!
+  newNotification: Notification!
 }
