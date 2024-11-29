@@ -347,7 +347,7 @@ type Notification {
 enum NotificationType {
   TASK
   PROJECT
-  Company
+  COMPANY
   DIRECT_MESSAGE
 }
 
@@ -383,6 +383,7 @@ type Query {
   getChatUsers(chatId: String!): GetChatUsersObject!
   getChatMessages(input: GetChatMessagesInput!): GetChatMessagesObject!
   getMessageReaders(messageId: String!): Message!
+  getNotifications: [Notification!]!
 }
 
 input SearchUsersInput {
@@ -444,6 +445,7 @@ type Mutation {
   addMessageToChat(input: CreateMessageInput!): Message!
   markMessagesAsRead(messageIds: [String!]!): Boolean!
   markChatMessagesAsRead(chatId: String!): Boolean!
+  markNotificationAsRead(notificationId: String!): String!
 }
 
 input RegisterUserInput {

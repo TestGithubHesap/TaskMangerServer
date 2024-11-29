@@ -15,7 +15,7 @@ import { Project } from './project.schema';
 export enum NotificationType {
   TASK = 'task',
   PROJECT = 'project',
-  Company = 'company',
+  COMPANY = 'company',
   //   MENTION = 'mention',
   //   TAG = 'tag',
   DIRECT_MESSAGE = 'direct_message',
@@ -44,12 +44,12 @@ export const Content = createUnionType({
     }
 
     // Eğer contentType yoksa value üzerinden kontrol et
-    // if (value) {
-    //   if ('userName' in value) return User;
-    //   if ('title' in value) return Post;
-    //   if ('post' in value && 'user' in value) return Like;
-    //   if ('content' in value) return Comment;
-    // }
+    if (value) {
+      if ('userName' in value) return User;
+      if ('name' in value) return Project;
+      if ('title' in value && 'project' in value) return Task;
+      if ('owner' in value) return Company;
+    }
 
     return null;
   },
@@ -79,7 +79,7 @@ export class Notification extends Document {
 
   @Prop({ type: Types.ObjectId, refPath: 'contentType' })
   @Field(() => Content, { nullable: true })
-  content: typeof Content;
+  content: Types.ObjectId;
 
   @Prop({ type: String, enum: ['Task', 'Project', 'User', 'Company'] })
   @Field()

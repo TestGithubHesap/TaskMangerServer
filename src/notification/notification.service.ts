@@ -73,10 +73,10 @@ export class NotificationService {
       return null;
     }
     const newNotification = new this.notificationModel({
-      recipient: recipientId,
-      sender: senderId,
+      recipient: new Types.ObjectId(recipientId),
+      sender: new Types.ObjectId(senderId),
       type,
-      content: content._id,
+      content: new Types.ObjectId(content._id),
       contentType,
       message,
       isRead: false,
@@ -100,5 +100,30 @@ export class NotificationService {
     });
 
     return savedNotification;
+  }
+
+  async getNotificationsForUser(
+    currentUserId: string,
+  ): Promise<Notification[]> {
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const data = await this.notificationModel
+      .find({
+        recipient: new Types.ObjectId(currentUserId),
+        $or: [{ isRead: false }, { createdAt: { $gte: twentyFourHoursAgo } }],
+      })
+      .sort({ createdAt: -1 })
+      .populate('sender')
+      .populate('content')
+      .lean();
+
+    return data;
+  }
+
+  async markAsRead(notificationId: string) {
+    await this.notificationModel.findByIdAndUpdate(notificationId, {
+      isRead: true,
+    });
+
+    return 'Success';
   }
 }
