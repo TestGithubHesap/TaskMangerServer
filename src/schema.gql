@@ -203,6 +203,28 @@ enum TaskPriority {
   URGENT
 }
 
+type Notification {
+  _id: ID!
+  recipients: [User!]!
+  sender: User!
+  type: NotificationType!
+  content: Content
+  contentType: String!
+  message: String!
+  isRead: Boolean!
+}
+
+"""Type of notification content"""
+enum NotificationType {
+  TASK
+  PROJECT
+  COMPANY
+  VIDEO_CALL
+  DIRECT_MESSAGE
+}
+
+union Content = Project | Task | Company | User
+
 type TaskSummary {
   totalTasks: Int!
   todoTasks: Int!
@@ -289,28 +311,6 @@ type Chat {
   updatedAt: DateTime!
 }
 
-type Notification {
-  _id: ID!
-  recipients: [User!]!
-  sender: User!
-  type: NotificationType!
-  content: Content
-  contentType: String!
-  message: String!
-  isRead: Boolean!
-}
-
-"""Type of notification content"""
-enum NotificationType {
-  TASK
-  PROJECT
-  COMPANY
-  VIDEO_CALL
-  DIRECT_MESSAGE
-}
-
-union Content = Project | Task | Company | User
-
 type GetUserChatsObject {
   _id: ID!
   participants: [User!]!
@@ -380,11 +380,11 @@ type Query {
   getTask(taskId: String!): Task!
   getAllTasksByProject(projectId: String!): GetAllTasksByProjectObject!
   getAllMyTasks: [Task!]!
+  getNotifications: [Notification!]!
   getChats: [GetUserChatsObject!]!
   getChatUsers(chatId: String!): GetChatUsersObject!
   getChatMessages(input: GetChatMessagesInput!): GetChatMessagesObject!
   getMessageReaders(messageId: String!): Message!
-  getNotifications: [Notification!]!
 }
 
 input SearchUsersInput {
@@ -432,6 +432,7 @@ type Mutation {
   removeParentTask(taskId: String!): String!
   updateTaskStatus(input: UpdateTaskStatusInput!): String!
   updateTask(input: UpdateTaskInput!): Task!
+  markNotificationAsRead(notificationId: String!): String!
   createChat(input: CreateChatInput!): Chat!
   generateSignedUploadUrl(input: SignUrlInput!): SignUrlOutput!
   leaveChat(chatId: String!): String!
@@ -446,7 +447,6 @@ type Mutation {
   addMessageToChat(input: CreateMessageInput!): Message!
   markMessagesAsRead(messageIds: [String!]!): Boolean!
   markChatMessagesAsRead(chatId: String!): Boolean!
-  markNotificationAsRead(notificationId: String!): String!
 }
 
 input RegisterUserInput {
@@ -570,7 +570,7 @@ type Subscription {
   changeUserStatus(userId: String!): ChangeUserStatusObject!
   changeUserRole: User!
   createCompanyProject(companyId: String!): Project!
+  newNotification: Notification!
   addMessageToChat(chatId: String!): ChatMessages!
   videoCallStarted(userId: String!): VideoCallNotificationObject!
-  newNotification: Notification!
 }

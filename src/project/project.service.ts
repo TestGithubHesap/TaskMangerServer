@@ -14,6 +14,8 @@ import { Company } from 'src/schemas/company.schema';
 import { PUB_SUB } from 'src/modules/pubSub.module';
 import { RedisPubSub } from 'graphql-redis-subscriptions';
 import { Task, TaskDocument } from 'src/schemas/task.schema';
+import { ClientProxy } from '@nestjs/microservices';
+import { NotificationType } from 'src/schemas/notification.schema';
 
 @Injectable()
 export class ProjectService {
@@ -23,6 +25,8 @@ export class ProjectService {
     @InjectModel(Task.name) private taskModel: Model<TaskDocument>,
     @Inject(PUB_SUB)
     private readonly pubSub: RedisPubSub,
+    @Inject('NOTIFICATION_SERVICE')
+    private readonly notificationServiceClient: ClientProxy,
   ) {}
   private handleError(
     message: string,
@@ -77,6 +81,20 @@ export class ProjectService {
           company: savedProject.company,
         },
       });
+
+      const notificationInput = {
+        senderId: user._id,
+        recipientIds: createProjectInput.teamMemberIds
+          .filter((recipient) => recipient !== userId)
+          .map((recipient) => new Types.ObjectId(recipient)),
+        type: NotificationType.PROJECT,
+        content: {
+          _id: new Types.ObjectId(createdProject._id),
+        },
+        contentType: 'Project',
+        message: `${user.userName} created a new project `,
+      };
+      this.notificationEmitEvent('create_notification', notificationInput);
       return savedProject;
     } catch (error) {
       this.handleError(
@@ -188,5 +206,9 @@ export class ProjectService {
     });
     // console.log(tasks, projectId);
     return tasks;
+  }
+
+  private notificationEmitEvent(cmd: string, payload: any) {
+    this.notificationServiceClient.emit(cmd, payload);
   }
 }
