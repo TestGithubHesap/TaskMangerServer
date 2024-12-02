@@ -53,19 +53,28 @@ export class MessageService {
   ): Promise<Message> {
     try {
       const [chat, user] = await Promise.all([
-        this.chatModel.findById(input.chatId),
+        this.chatModel
+          .findOne({
+            _id: input.chatId,
+            participants: { $in: new Types.ObjectId(userId) },
+          })
+          .populate({
+            path: 'participants',
+            select: '_id status ',
+            model: 'User',
+          }),
         this.userModel.findById(userId),
       ]);
       if (!chat || !user) {
         return this.handleError('Chat or user not found', HttpStatus.NOT_FOUND);
       }
 
-      if (!chat.participants.includes(new Types.ObjectId(user._id))) {
-        return this.handleError(
-          'User is not a participant of this chat',
-          HttpStatus.FORBIDDEN,
-        );
-      }
+      // if (!chat.participants.includes(new Types.ObjectId(user._id))) {
+      //   return this.handleError(
+      //     'User is not a participant of this chat',
+      //     HttpStatus.FORBIDDEN,
+      //   );
+      // }
       let mediaId: Types.ObjectId | undefined;
       if (input.mediaContent) {
         const newMedia = new this.mediaContentModel({
@@ -113,22 +122,26 @@ export class MessageService {
       this.pubSub.publish('addMessageToChat', {
         addMessageToChat: messageForPublish,
       });
-      if (chat.participants.length == 2) {
-        const notificationInput = {
-          senderId: user._id,
-          recipientId: chat.participants
-            .find((participant) => participant.toString() !== userId)
-            .toString(),
-          type: NotificationType.DIRECT_MESSAGE,
-          content: {
-            _id: new Types.ObjectId(user._id),
-          },
-          contentType: 'User',
-          message: `${user.userName} messaj attı`,
-        };
+      const participants = chat.participants as unknown as User[];
+      const notificationInput = {
+        senderId: user._id,
+        recipientIds: participants
+          .filter(
+            (participant) =>
+              participant._id.toString() !== userId.toString() &&
+              participant.status !== 'online',
+          )
+          .map((participant) => participant._id),
+        type: NotificationType.DIRECT_MESSAGE,
+        content: {
+          _id: new Types.ObjectId(user._id),
+        },
+        contentType: 'User',
+        message: `${user.userName} messaj attı`,
+      };
 
-        this.notificationEmitEvent('create_notification', notificationInput);
-      }
+      this.notificationEmitEvent('create_notification', notificationInput);
+
       return newMessage;
     } catch (error) {
       this.handleError(

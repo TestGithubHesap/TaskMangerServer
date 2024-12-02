@@ -289,6 +289,28 @@ type Chat {
   updatedAt: DateTime!
 }
 
+type Notification {
+  _id: ID!
+  recipients: [User!]!
+  sender: User!
+  type: NotificationType!
+  content: Content
+  contentType: String!
+  message: String!
+  isRead: Boolean!
+}
+
+"""Type of notification content"""
+enum NotificationType {
+  TASK
+  PROJECT
+  COMPANY
+  VIDEO_CALL
+  DIRECT_MESSAGE
+}
+
+union Content = Project | Task | Company | User
+
 type GetUserChatsObject {
   _id: ID!
   participants: [User!]!
@@ -331,27 +353,6 @@ type VideoCallNotificationObject {
   participants: [String!]!
   userName: String!
 }
-
-type Notification {
-  _id: ID!
-  recipient: User!
-  sender: User!
-  type: NotificationType!
-  content: Content
-  contentType: String!
-  message: String!
-  isRead: Boolean!
-}
-
-"""Type of notification content"""
-enum NotificationType {
-  TASK
-  PROJECT
-  COMPANY
-  DIRECT_MESSAGE
-}
-
-union Content = Project | Task | Company | User
 
 type GetChatMessagesObject {
   messages: [ChatMessages!]!

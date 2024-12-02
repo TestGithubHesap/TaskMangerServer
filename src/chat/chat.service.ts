@@ -13,6 +13,8 @@ import { CreateChatInput } from './dto/CreateChatInput';
 import { LivekitService } from 'src/liveKit/liveKit.service';
 import { RedisPubSub } from 'graphql-redis-subscriptions';
 import { PUB_SUB } from 'src/modules/pubSub.module';
+import { NotificationType } from 'src/schemas/notification.schema';
+import { ClientProxy } from '@nestjs/microservices';
 const VIDEO_CALL_STARTED = 'videoCallStarted';
 @Injectable()
 export class ChatService {
@@ -22,6 +24,8 @@ export class ChatService {
     @InjectModel(Message.name) private messageModel: Model<MessageDocument>,
     private readonly liveKitService: LivekitService,
     @Inject(PUB_SUB) private readonly pubSub: RedisPubSub,
+    @Inject('NOTIFICATION_SERVICE')
+    private readonly notificationServiceClient: ClientProxy,
   ) {}
   private handleError(
     message: string,
@@ -564,29 +568,74 @@ export class ChatService {
     const isRoomActive = await this.liveKitService.isRoomActive(
       `chat-${chatId}`,
     );
-    console.log(isRoomActive);
+    // console.log(isRoomActive);
     if (isRoomActive) {
-      console.log('hello');
+      // console.log('hello');
       return true;
       // this.handleError('Video call is already active', HttpStatus.CONFLICT);
     }
-    const chat = await this.chatModel.findById(chatId);
+    const chat = await this.chatModel
+      .findOne({
+        _id: chatId,
+        participants: { $in: new Types.ObjectId(currentUserId) },
+      })
+      .populate({
+        path: 'participants',
+        select: '_id status ',
+        model: 'User',
+      });
     const user = await this.userModel.findById(currentUserId);
     if (!chat || !user) {
       this.handleError('Chat or User not found', HttpStatus.NOT_FOUND);
     }
-    const participants = chat.participants.filter(
-      (participant) => participant._id.toString() !== currentUserId,
-    );
+
+    const participants = chat.participants as unknown as User[];
+    // const participants = chat.participants.filter(
+    //   (participant) => participant._id.toString() !== currentUserId,
+    // );
+    const participantIds = participants
+      .filter(
+        (participant) =>
+          participant._id.toString() !== currentUserId.toString() &&
+          participant.status !== 'offline',
+      )
+      .map((participant) => participant._id.toString());
 
     this.pubSub.publish(VIDEO_CALL_STARTED, {
       videoCallStarted: {
-        participants: participants,
+        participants: participants
+          .filter(
+            (participant) =>
+              participant._id.toString() !== currentUserId.toString() &&
+              participant.status !== 'offline',
+          )
+          .map((participant) => participant._id.toString()),
         chatId: chat._id,
         userName: user.userName,
       },
     });
+    const notificationInput = {
+      senderId: user._id,
+      recipientIds: participants
+        .filter(
+          (participant) =>
+            participant._id.toString() !== currentUserId.toString() &&
+            participant.status !== 'online',
+        )
+        .map((participant) => participant._id),
+      type: NotificationType.VIDEO_CALL,
+      content: {
+        _id: new Types.ObjectId(user._id),
+      },
+      contentType: 'User',
+      message: `${user.userName} ${new Date().toLocaleString()} görüntülü arama başlattı.`,
+    };
 
+    this.notificationEmitEvent('create_notification', notificationInput);
     return true;
+  }
+
+  private notificationEmitEvent(cmd: string, payload: any) {
+    this.notificationServiceClient.emit(cmd, payload);
   }
 }

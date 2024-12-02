@@ -16,8 +16,7 @@ export enum NotificationType {
   TASK = 'task',
   PROJECT = 'project',
   COMPANY = 'company',
-  //   MENTION = 'mention',
-  //   TAG = 'tag',
+  VIDEO_CALL = 'video_call',
   DIRECT_MESSAGE = 'direct_message',
 }
 interface NotificationRootValue {
@@ -65,9 +64,17 @@ export class Notification extends Document {
   @Field(() => ID)
   _id: string;
 
-  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
-  @Field(() => User)
-  recipient: Types.ObjectId;
+  @Prop({
+    type: [
+      {
+        type: Types.ObjectId,
+        ref: 'User',
+      },
+    ],
+    required: true,
+  })
+  @Field(() => [User])
+  recipients: Types.ObjectId[];
 
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   @Field(() => User)

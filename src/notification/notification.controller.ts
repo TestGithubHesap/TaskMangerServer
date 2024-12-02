@@ -3,6 +3,7 @@ import { NotificationService } from './notification.service';
 import { SharedService } from 'src/Shared/shared.service';
 import { Ctx, EventPattern, Payload, RmqContext } from '@nestjs/microservices';
 import { Content, NotificationType } from 'src/schemas/notification.schema';
+import { Types } from 'mongoose';
 
 @Controller()
 export class NotificationController {
@@ -17,7 +18,7 @@ export class NotificationController {
     @Ctx() context: RmqContext,
     @Payload()
     payload: {
-      recipientId: string;
+      recipientIds: Types.ObjectId[];
       senderId: string;
       type: NotificationType;
       content: typeof Content;
@@ -26,7 +27,7 @@ export class NotificationController {
     },
   ) {
     try {
-      console.log('kuyruk çalıştı');
+      // console.log('kuyruk çalıştı', payload.recipientIds);
       await this.notificationService.createNotification(payload);
       this.sharedService.acknowledgeMessage(context);
     } catch (error) {

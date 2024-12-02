@@ -41,14 +41,14 @@ export class NotificationService {
     });
   }
   async createNotification({
-    recipientId,
+    recipientIds,
     senderId,
     type,
     content,
     contentType,
     message,
   }: {
-    recipientId: string;
+    recipientIds: Types.ObjectId[];
     senderId: string;
     type: NotificationType;
     content: typeof Content;
@@ -58,22 +58,24 @@ export class NotificationService {
     const sender = await this.userModel
       .findById(senderId)
       .select('userName _id profilePhoto');
-    const recipient = await this.userModel
-      .findById(recipientId)
-      .select('status');
-
-    if (!sender || !recipient) {
+    const recipient = await this.userModel.find(
+      { _id: { $in: recipientIds } },
+      '_id status',
+    );
+    // console.log(recipient);
+    if (!sender) {
       this.handleError('User not Found', HttpStatus.NOT_FOUND);
     }
 
-    if (
-      recipient.status == 'online' &&
-      type == NotificationType.DIRECT_MESSAGE
-    ) {
-      return null;
-    }
+    // if (
+    //   recipient.status == 'online' &&
+    //   type == NotificationType.DIRECT_MESSAGE
+    // ) {
+    //   return null;
+    // }
+
     const newNotification = new this.notificationModel({
-      recipient: new Types.ObjectId(recipientId),
+      recipients: recipientIds,
       sender: new Types.ObjectId(senderId),
       type,
       content: new Types.ObjectId(content._id),
@@ -85,7 +87,7 @@ export class NotificationService {
 
     this.pubSub.publish('newNotification', {
       newNotification: {
-        recipient: recipientId,
+        recipients: recipientIds,
         type,
         content: {
           ...content,
@@ -108,7 +110,7 @@ export class NotificationService {
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
     const data = await this.notificationModel
       .find({
-        recipient: new Types.ObjectId(currentUserId),
+        recipients: { $in: currentUserId },// $in is used to match any of the values in the array
         $or: [{ isRead: false }, { createdAt: { $gte: twentyFourHoursAgo } }],
       })
       .sort({ createdAt: -1 })
