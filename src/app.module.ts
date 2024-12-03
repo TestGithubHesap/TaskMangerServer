@@ -15,6 +15,8 @@ import { CompanyModule } from './company/company.module';
 import { ProjectModule } from './project/project.module';
 import { TaskModule } from './task/task.module';
 import { ChatModule } from './chat/chat.module';
+import { NotificationModule } from './notification/notification.module';
+import { SharedModule } from './Shared/shared.module';
 
 @Module({
   imports: [
@@ -22,6 +24,7 @@ import { ChatModule } from './chat/chat.module';
     UserModule,
     PubSubModule,
     MongoDBModule.forRoot('TASK'),
+    SharedModule.registerRmq('NOTIFICATION_SERVICE', 'NOTIFICATION'),
     GraphQLModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -61,6 +64,7 @@ import { ChatModule } from './chat/chat.module';
     ProjectModule,
     TaskModule,
     ChatModule,
+    NotificationModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -9,12 +9,16 @@ import { Project, ProjectSchema } from 'src/schemas/project.schema';
 import { PubSubModule } from 'src/modules/pubSub.module';
 import { Task, TaskSchema } from 'src/schemas/task.schema';
 import { TaskModule } from 'src/task/task.module';
+import { SharedModule } from 'src/Shared/shared.module';
+import { NotificationModule } from 'src/notification/notification.module';
 
 @Module({
   imports: [
     AuthModule,
     TaskModule,
     PubSubModule,
+    NotificationModule,
+    SharedModule.registerRmq('NOTIFICATION_SERVICE', 'NOTIFICATION'),
     MongooseModule.forFeature([
       { name: User.name, schema: UserSchema },
       { name: Company.name, schema: CompanySchema },

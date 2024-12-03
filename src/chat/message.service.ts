@@ -17,6 +17,10 @@ import {
   MediaContent,
   MediaContentDocument,
 } from 'src/schemas/mediaContent.schema';
+import { NotificationService } from 'src/notification/notification.service';
+import { NotificationType } from 'src/schemas/notification.schema';
+import { ObjectType } from '@nestjs/graphql';
+import { ClientProxy } from '@nestjs/microservices';
 
 @Injectable()
 export class MessageService {
@@ -27,6 +31,8 @@ export class MessageService {
     @InjectModel(MediaContent.name)
     private mediaContentModel: Model<MediaContentDocument>,
     @Inject(PUB_SUB) private readonly pubSub: RedisPubSub,
+    @Inject('NOTIFICATION_SERVICE')
+    private readonly notificationServiceClient: ClientProxy,
   ) {}
   private handleError(
     message: string,
@@ -47,19 +53,28 @@ export class MessageService {
   ): Promise<Message> {
     try {
       const [chat, user] = await Promise.all([
-        this.chatModel.findById(input.chatId),
+        this.chatModel
+          .findOne({
+            _id: input.chatId,
+            participants: { $in: new Types.ObjectId(userId) },
+          })
+          .populate({
+            path: 'participants',
+            select: '_id status ',
+            model: 'User',
+          }),
         this.userModel.findById(userId),
       ]);
       if (!chat || !user) {
         return this.handleError('Chat or user not found', HttpStatus.NOT_FOUND);
       }
 
-      if (!chat.participants.includes(new Types.ObjectId(user._id))) {
-        return this.handleError(
-          'User is not a participant of this chat',
-          HttpStatus.FORBIDDEN,
-        );
-      }
+      // if (!chat.participants.includes(new Types.ObjectId(user._id))) {
+      //   return this.handleError(
+      //     'User is not a participant of this chat',
+      //     HttpStatus.FORBIDDEN,
+      //   );
+      // }
       let mediaId: Types.ObjectId | undefined;
       if (input.mediaContent) {
         const newMedia = new this.mediaContentModel({
@@ -107,6 +122,25 @@ export class MessageService {
       this.pubSub.publish('addMessageToChat', {
         addMessageToChat: messageForPublish,
       });
+      const participants = chat.participants as unknown as User[];
+      const notificationInput = {
+        senderId: user._id,
+        recipientIds: participants
+          .filter(
+            (participant) =>
+              participant._id.toString() !== userId.toString() &&
+              participant.status !== 'online',
+          )
+          .map((participant) => participant._id),
+        type: NotificationType.DIRECT_MESSAGE,
+        content: {
+          _id: new Types.ObjectId(user._id),
+        },
+        contentType: 'User',
+        message: `${user.userName} messaj attı`,
+      };
+
+      this.notificationEmitEvent('create_notification', notificationInput);
 
       return newMessage;
     } catch (error) {
@@ -265,5 +299,9 @@ export class MessageService {
         error,
       );
     }
+  }
+
+  private notificationEmitEvent(cmd: string, payload: any) {
+    this.notificationServiceClient.emit(cmd, payload);
   }
 }

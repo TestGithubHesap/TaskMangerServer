@@ -1,5 +1,10 @@
 // task.service.ts
-import { Injectable, BadRequestException, HttpStatus } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  HttpStatus,
+  Inject,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Task, TaskDocument, TaskStatus } from 'src/schemas/task.schema';
@@ -8,6 +13,8 @@ import { GraphQLError } from 'graphql';
 import { Project, ProjectDocument } from 'src/schemas/project.schema';
 import { User, UserDocument, UserRole } from 'src/schemas/user.schema';
 import { UpdateTaskInput } from './dto/updateTaskInput';
+import { ClientProxy } from '@nestjs/microservices';
+import { NotificationType } from 'src/schemas/notification.schema';
 
 @Injectable()
 export class TaskService {
@@ -15,6 +22,8 @@ export class TaskService {
     @InjectModel(Task.name) private taskModel: Model<TaskDocument>,
     @InjectModel(Project.name) private projectModel: Model<ProjectDocument>,
     @InjectModel(User.name) private userModel: Model<UserDocument>,
+    @Inject('NOTIFICATION_SERVICE')
+    private readonly notificationServiceClient: ClientProxy,
   ) {}
 
   private parseDateString(dateString: string): Date {
@@ -102,6 +111,20 @@ export class TaskService {
         project.team.push(objectIdAssignee);
         await project.save();
       }
+      if (createTaskDto.assigneeId !== userId) {
+        const notificationInput = {
+          senderId: userId,
+          recipientIds: [new Types.ObjectId(createTaskDto.assigneeId)],
+          type: NotificationType.TASK,
+          content: {
+            _id: new Types.ObjectId(savedTask._id),
+          },
+          contentType: 'Task',
+          message: `${project.name} created a new Task `,
+        };
+        this.notificationEmitEvent('create_notification', notificationInput);
+      }
+
       return savedTask;
     } catch (error) {
       this.handleError(
@@ -339,134 +362,6 @@ export class TaskService {
     }
 
     return task;
-    // const projectMatchStage = user.roles.includes(UserRole.ADMIN)
-    //   ? {}
-    //   : { 'project.company': user.company.toString() };
-    // const task = await this.taskModel.aggregate([
-    //   // Kullanıcıya atanan görevleri bul
-    //   {
-    //     $match: {
-    //       _id: taskId,
-    //     },
-    //   },
-    //   // Projeyi join et
-    //   {
-    //     $lookup: {
-    //       from: 'projects',
-    //       let: { projectId: '$project' },
-    //       pipeline: [
-    //         {
-    //           $match: {
-    //             $expr: {
-    //               $eq: ['$_id', { $toObjectId: '$$projectId' }], // companyId'yi ObjectId'ye dönüştürüyoruz
-    //             },
-    //           },
-    //         },
-    //         {
-    //           $project: {
-    //             _id: 1,
-    //             company: 1,
-    //             name: 1,
-    //           },
-    //         },
-    //       ],
-    //       as: 'project',
-    //     },
-    //   },
-    //   // Array'i tekil objeye çevir
-    //   {
-    //     $unwind: '$project',
-    //   },
-    //   // Şirket kontrolü
-    //   {
-    //     $match: {
-    //       projectMatchStage,
-    //     },
-    //   },
-    //   // Parent task bilgilerini getir
-    //   {
-    //     $lookup: {
-    //       from: 'tasks',
-    //       let: { parentTaskId: '$parentTask' },
-    //       pipeline: [
-    //         {
-    //           $match: {
-    //             $expr: {
-    //               $eq: ['$_id', { $toObjectId: '$$parentTaskId' }],
-    //             },
-    //           },
-    //         },
-    //         {
-    //           $project: {
-    //             _id: 1,
-    //             title: 1,
-    //           },
-    //         },
-    //       ],
-    //       as: 'parentTask',
-    //     },
-    //   },
-    //   // // Parent task array'ini tekil objeye çevir
-    //   {
-    //     $unwind: {
-    //       path: '$parentTask',
-    //       preserveNullAndEmptyArrays: true,
-    //     },
-    //   },
-    //   // // Sub tasks bilgilerini getir
-    //   {
-    //     $lookup: {
-    //       from: 'tasks',
-    //       let: {
-    //         subTaskIds: {
-    //           $map: {
-    //             input: '$subTasks',
-    //             as: 'id',
-    //             in: { $toObjectId: '$$id' },
-    //           },
-    //         },
-    //       },
-    //       pipeline: [
-    //         {
-    //           $match: {
-    //             $expr: {
-    //               $in: ['$_id', '$$subTaskIds'],
-    //             },
-    //           },
-    //         },
-    //         {
-    //           $project: {
-    //             _id: 1,
-    //             title: 1,
-    //           },
-    //         },
-    //       ],
-    //       as: 'subTasks',
-    //     },
-    //   },
-
-    //   // // Sonuçları düzenle
-    //   {
-    //     $project: {
-    //       _id: 1,
-    //       title: 1,
-    //       description: 1,
-    //       status: 1,
-    //       priority: 1,
-    //       dueDate: 1,
-    //       completedAt: 1,
-    //       createdAt: 1,
-    //       updatedAt: 1,
-    //       project: {
-    //         _id: 1,
-    //         name: 1,
-    //         company: 1,
-    //       },
-    //       parentTask: 1,
-    //       subTasks: 1,
-    //     },
-    //   },
-    // ]);
   }
 
   async getAllTasksByProject(projectId: string): Promise<{
@@ -639,5 +534,9 @@ export class TaskService {
       },
     ]);
     return tasks;
+  }
+
+  private notificationEmitEvent(cmd: string, payload: any) {
+    this.notificationServiceClient.emit(cmd, payload);
   }
 }

@@ -14,13 +14,16 @@ import {
 } from 'src/schemas/mediaContent.schema';
 import { CloudinaryModule } from 'src/cloudinary/cloudinary.module';
 import { LivekitModule } from 'src/liveKit/liveKit.module';
-;
-
+import { NotificationModule } from 'src/notification/notification.module';
+import { SharedModule } from 'src/Shared/shared.module';
 @Module({
   imports: [
     AuthModule,
+    NotificationModule,
     CloudinaryModule,
     LivekitModule,
+    // SharedModule,
+    SharedModule.registerRmq('NOTIFICATION_SERVICE', 'NOTIFICATION'),
     MongooseModule.forFeature([
       { name: User.name, schema: UserSchema },
       { name: Chat.name, schema: ChatSchema },

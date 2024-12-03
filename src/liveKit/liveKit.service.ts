@@ -53,16 +53,14 @@ export class LivekitService {
     }
 
     try {
-
       const participants = await this.roomService.listParticipants(roomName);
-      console.log(participants);
 
       return participants.length > 0;
     } catch (error) {
-      if (error.message.includes('room not found')) {
-     
+      if (error.status == 404) {
         return false;
       }
+      console.log(error);
 
       throw new Error(`Oda kontrolü sırasında hata: ${error.message}`);
     }
