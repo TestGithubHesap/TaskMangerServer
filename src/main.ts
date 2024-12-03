@@ -26,7 +26,7 @@ async function bootstrap() {
   );
 
   app.enableCors({
-    origin: 'https://unrivaled-puffpuff-574ff4.netlify.app/',
+    origin: process.env.ORIGIN || 'http://localhost:5173',
     credentials: true,
     // allowedHeaders: [
     //   'Content-Type',
